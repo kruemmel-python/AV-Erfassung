@@ -261,7 +261,7 @@ private fun InfoDialog(close: () -> Unit) = AlertDialog(
     title = { Text("AV-Erfassung", fontWeight = FontWeight.Black, color = DhlRed) },
     text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Version 2.0.1", fontWeight = FontWeight.Bold)
+            Text("Version 2.0.2", fontWeight = FontWeight.Bold)
             HorizontalDivider()
             Text("Developer", fontWeight = FontWeight.Bold)
             Text("Ralf Krümmel")
@@ -419,6 +419,7 @@ private fun HistoryScreen(vm: MainViewModel) {
         if (shifts.isEmpty()) Empty("Noch keine Schichten") else LazyColumn {
             items(shifts, key = { it.shift.id }) { shift ->
                 val stats = ShiftStatisticsService.calculate(shift)
+                val deletedCount = shift.boxes.count { it.box.status == BoxStatus.CANCELLED }
                 Card(
                     Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -430,6 +431,7 @@ private fun HistoryScreen(vm: MainViewModel) {
                             Text("${shift.shift.type.label} · ${shift.shift.shiftDate}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Text("${stats.boxCount} Kisten · Registrierung ${stats.registrationMillis.asDuration()}")
                             Text("Produktiv ${stats.productiveMillis.asDuration()}", color = DhlRed, fontWeight = FontWeight.Bold)
+                            if (deletedCount > 0) Text("$deletedCount gelöschte Kiste(n)", color = DhlDarkRed, fontWeight = FontWeight.Black)
                         }
                         if (shift.shift.id in expanded) {
                             HorizontalDivider()
@@ -439,9 +441,16 @@ private fun HistoryScreen(vm: MainViewModel) {
                                 when (kind) {
                                     "box" -> {
                                         val box = value as BoxWithInterruptions
-                                        Column(Modifier.fillMaxWidth().clickable { vm.showDetail(box) }.padding(horizontal = 14.dp, vertical = 9.dp)) {
+                                        val deleted = box.box.status == BoxStatus.CANCELLED
+                                        Column(
+                                            Modifier.fillMaxWidth()
+                                                .background(if (deleted) Color(0xFFFFCDD2) else Color.Transparent)
+                                                .clickable { vm.showDetail(box) }
+                                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                                        ) {
                                             Text("Kiste ${box.box.displayNumber} · ${box.box.type.label}", fontWeight = FontWeight.Bold)
                                             Text("${time(box.box.startedAtUtc)}–${box.box.endedAtUtc?.let(::time) ?: "läuft"} · ${box.netMillis().asDuration()}")
+                                            if (deleted) Text("GELÖSCHT", color = DhlDarkRed, fontWeight = FontWeight.Black, fontSize = 18.sp)
                                         }
                                     }
                                     else -> {
@@ -482,6 +491,7 @@ private fun ShiftsScreen(vm: MainViewModel) {
             if (shifts.isEmpty()) item { Empty("Noch keine Schichten erfasst") }
             items(shifts, key = { it.shift.id }) { item ->
                 val stats = ShiftStatisticsService.calculate(item)
+                val deletedCount = item.boxes.count { it.box.status == BoxStatus.CANCELLED }
                 Card(
                     Modifier.fillMaxWidth().clickable { vm.showShift(item) },
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -490,6 +500,7 @@ private fun ShiftsScreen(vm: MainViewModel) {
                         Text("${item.shift.type.label} · ${item.shift.shiftDate}", fontWeight = FontWeight.Bold, fontSize = 19.sp)
                         Text("Personalnr. ${item.shift.personnelNumber} · ${item.shift.status}")
                         Text("${stats.boxCount} Kisten · Produktiv ${stats.productiveMillis.asDuration()}", color = DhlRed, fontWeight = FontWeight.Bold)
+                        if (deletedCount > 0) Text("$deletedCount gelöschte Kiste(n)", color = DhlDarkRed, fontWeight = FontWeight.Black)
                         TextButton(onClick = {
                             selectedIds = if (item.shift.id in selectedIds) selectedIds - item.shift.id else selectedIds + item.shift.id
                         }, modifier = Modifier.align(Alignment.End)) {
@@ -558,13 +569,18 @@ private fun ShiftReportScreen(item: ShiftWithData, vm: MainViewModel) {
                 }
             }
             items(item.boxes.sortedBy { it.box.startedAtUtc }, key = { "b${it.box.id}" }) { box ->
-                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                val deleted = box.box.status == BoxStatus.CANCELLED
+                Card(
+                    Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = if (deleted) Color(0xFFFFCDD2) else Color.White),
+                ) {
                     Column(Modifier.padding(11.dp)) {
                         Text("Kiste ${box.box.displayNumber} · ${box.box.type.label}", fontWeight = FontWeight.Bold)
                         Text("${time(box.box.startedAtUtc)}–${box.box.endedAtUtc?.let(::time) ?: "läuft"} · Netto ${box.netMillis().asDuration()}")
+                        if (deleted) Text("GELÖSCHT", color = DhlDarkRed, fontWeight = FontWeight.Black, fontSize = 18.sp)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { vm.showDetail(box) }) { Text(if (teamLeader) "BEARBEITEN" else "ÖFFNEN") }
-                            if (teamLeader && box.box.endedAtUtc != null) {
+                            if (teamLeader && box.box.endedAtUtc != null && !deleted) {
                                 TextButton(onClick = { deleteShiftBox = box }) { Text("GESAMTE KISTE LÖSCHEN", color = DhlDarkRed) }
                             }
                         }
@@ -653,6 +669,11 @@ private fun DetailScreen(item: BoxWithInterruptions, vm: MainViewModel, back: ()
     Column(Modifier.fillMaxSize()) {
         AppBar("KISTE ${item.box.displayNumber}", back)
         LazyColumn(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            if (item.box.status == BoxStatus.CANCELLED) item {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFCDD2)), modifier = Modifier.fillMaxWidth()) {
+                    Text("GELÖSCHTE KISTE – wird in Statistiken nicht mitgezählt", modifier = Modifier.padding(14.dp), color = DhlDarkRed, fontWeight = FontWeight.Black)
+                }
+            }
             item { Stat("Kistenart", item.box.type.label, strong = true) }
             item { Stat("Personalnummer", item.box.employeeNumber.ifBlank { "–" }) }
             item { Stat("Start", "${date(item.box.startedAtUtc)} ${time(item.box.startedAtUtc)}") }
@@ -666,7 +687,7 @@ private fun DetailScreen(item: BoxWithInterruptions, vm: MainViewModel, back: ()
                         interruption.optionalNote?.let { Text("Hinweis: $it", color = DhlDarkRed) }
                         Text("${time(interruption.startedAtUtc)}–${interruption.endedAtUtc?.let(::time) ?: "läuft"}")
                         Text("Dauer: ${interruption.durationMillis().asDuration()}")
-                        if (teamLeaderActive) {
+                        if (teamLeaderActive && item.box.status != BoxStatus.CANCELLED) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TextButton(onClick = { editInterruption = interruption }) { Text("ÄNDERN") }
                                 TextButton(onClick = { deleteInterruption = interruption }) {
@@ -691,7 +712,7 @@ private fun DetailScreen(item: BoxWithInterruptions, vm: MainViewModel, back: ()
             }
             item {
                 Spacer(Modifier.height(8.dp))
-                if (teamLeaderActive) {
+                if (teamLeaderActive && item.box.status != BoxStatus.CANCELLED) {
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3B0)), modifier = Modifier.fillMaxWidth()) {
                         Text(
                             "Teamleiter-Modus aktiv bis ${time(teamLeaderValidUntil)} Uhr",
@@ -721,7 +742,7 @@ private fun DetailScreen(item: BoxWithInterruptions, vm: MainViewModel, back: ()
                         "GESAMTE KISTE LÖSCHEN", { deleteBox = true },
                         Modifier.fillMaxWidth().height(62.dp), danger = true,
                     )
-                } else {
+                } else if (item.box.status != BoxStatus.CANCELLED) {
                     BigButton(
                         "TEAMLEITER-MODUS FREISCHALTEN", { requestKey = true },
                         Modifier.fillMaxWidth().height(64.dp), filled = false,

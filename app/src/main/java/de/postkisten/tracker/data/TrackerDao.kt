@@ -14,15 +14,6 @@ interface TrackerDao {
     @Update suspend fun updateBox(box: BoxEntity)
     @Delete suspend fun deleteBox(box: BoxEntity)
 
-    @Query("""UPDATE work_processes SET
-        related_box_id = CASE WHEN related_box_id = :boxId THEN NULL ELSE related_box_id END,
-        previous_box_id = CASE WHEN previous_box_id = :boxId THEN NULL ELSE previous_box_id END,
-        next_box_id = CASE WHEN next_box_id = :boxId THEN NULL ELSE next_box_id END,
-        updated_at_utc = :updatedAtUtc,
-        manually_modified = 1,
-        change_log = change_log || CASE WHEN change_log = '' THEN '' ELSE char(10) END || :auditEntry
-        WHERE related_box_id = :boxId OR previous_box_id = :boxId OR next_box_id = :boxId""")
-    suspend fun detachBoxReferences(boxId: Long, updatedAtUtc: Long, auditEntry: String)
     @Insert suspend fun insertInterruption(value: InterruptionEntity): Long
     @Update suspend fun updateInterruption(value: InterruptionEntity)
     @Delete suspend fun deleteInterruption(value: InterruptionEntity)

@@ -13,8 +13,8 @@ android {
         applicationId = "de.postkisten.tracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
-        versionName = "2.0.1"
+        versionCode = 10
+        versionName = "2.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

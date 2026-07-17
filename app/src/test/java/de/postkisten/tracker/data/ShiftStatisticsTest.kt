@@ -100,4 +100,17 @@ class ShiftStatisticsTest {
         assertEquals(1_000L, stats.averageBoxMillis)
         assertEquals(2_000L, stats.productiveMillis)
     }
+
+    @Test fun `deleted box remains stored but is excluded from all box statistics`() {
+        val shift = ShiftEntity(1, ShiftType.LATE, "2026-07-17", 0, 10_000, status = ShiftStatus.MANUALLY_CORRECTED, personnelNumber = "7262", createdAtUtc = 0, updatedAtUtc = 0)
+        val deleted = BoxWithInterruptions(
+            BoxEntity(id = 1, displayNumber = "S-2026-07-17-001", type = BoxType.DAILY_MAIL, employeeNumber = "7262", startedAtUtc = 1_000, startedElapsedRealtime = 0, bootCount = 0, endedAtUtc = 5_000, status = BoxStatus.CANCELLED, createdAtUtc = 0, updatedAtUtc = 0, shiftId = 1),
+            emptyList(),
+        )
+        val stats = ShiftStatisticsService.calculate(ShiftWithData(shift, listOf(deleted), emptyList()), nowUtc = 10_000)
+        assertEquals(0, stats.boxCount)
+        assertEquals(0L, stats.boxGrossMillis)
+        assertEquals(0L, stats.boxNetMillis)
+        assertEquals(null, stats.averageBoxMillis)
+    }
 }

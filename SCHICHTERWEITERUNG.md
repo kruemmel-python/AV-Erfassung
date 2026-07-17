@@ -26,13 +26,13 @@ Der bekannte Datensatz `2026-07-16-003` wird nicht als echte Kiste gezählt. Er 
 
 ## Teamleiter
 
-Der neun Stunden gültige Schlüssel schaltet die manuelle Bearbeitung frei. Bearbeitbar sind Kistenart, Personalnummer, Kistenzeiten, Pausen und weitere Unterbrechungen, Schichtzuordnung sowie sämtliche Arbeitsprozesse. Ganze abgeschlossene Kisten können nach Eingabe eines Löschgrunds vollständig gelöscht werden; ihre Unterbrechungen und Prozessreferenzen werden dabei konsistent bereinigt. Prozesse können hinzugefügt, zeitlich geändert, umklassifiziert, einer anderen Schicht zugeordnet, mit Hinweisen oder Kistenwechsel-Referenzen versehen und storniert werden. Änderungen werden protokolliert und fließen unmittelbar in Statistik und CSV ein.
+Der neun Stunden gültige Schlüssel schaltet die manuelle Bearbeitung frei. Bearbeitbar sind Kistenart, Personalnummer, Kistenzeiten, Pausen und weitere Unterbrechungen, Schichtzuordnung sowie sämtliche Arbeitsprozesse. Ganze abgeschlossene Kisten können nach Eingabe eines Löschgrunds gelöscht werden. Sie bleiben zur Nachvollziehbarkeit als rot markierte, nicht mehr mitgezählte Datensätze im Verlauf und Schichtbericht erhalten. Prozesse können hinzugefügt, zeitlich geändert, umklassifiziert, einer anderen Schicht zugeordnet, mit Hinweisen oder Kistenwechsel-Referenzen versehen und storniert werden. Änderungen werden protokolliert und fließen unmittelbar in Statistik und CSV ein.
 
 ## Tests und Build
 
 Automatisiert geprüft werden unter anderem reguläre und montagsbedingte Überlappungen, Nacht-/Datumswechsel, DST, Zeitberechnung, Teamleiter-Schlüssel, manuelle Intervalle, die Referenz-Nachtschicht, Kistenwechselstatistik sowie CSV-Spalten, Null-Kisten und Maskierung. Ergebnis: 22 Tests, 0 Fehler.
 
-Release: AV-Erfassung `2.0.1` (`versionCode 9`). Beide APKs sind mit APK Signature Scheme v2 signiert.
+Release: AV-Erfassung `2.0.2` (`versionCode 10`). Beide APKs sind mit APK Signature Scheme v2 signiert.
 
 ## Manuelle Nachprüfung nach Update
 

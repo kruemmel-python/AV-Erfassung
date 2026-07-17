@@ -100,12 +100,14 @@ class TrackerRepository(
         check(box.box.status !in setOf(BoxStatus.ACTIVE, BoxStatus.SUSPENDED)) {
             "Eine laufende oder unterbrochene Kiste muss zuerst regulär beendet werden."
         }
+        check(box.box.status != BoxStatus.CANCELLED) { "Diese Kiste wurde bereits gelöscht." }
         val shift = box.box.shiftId?.let { dao.getShift(it)?.shift }
         val now = System.currentTimeMillis()
-        val entry = "${stamp(now)} – Teamleiter: Referenz auf gelöschte Kiste ${box.box.displayNumber} entfernt – ${reason.trim().take(200)}"
-        dao.detachBoxReferences(boxId, now, entry)
-        dao.deleteBox(box.box)
-        shift?.let { auditShift(it, now, "Kiste ${box.box.displayNumber} vollständig gelöscht", reason) }
+        dao.updateBox(
+            box.box.copy(status = BoxStatus.CANCELLED)
+                .withAudit(now, "Kiste durch Teamleiter gelöscht", reason),
+        )
+        shift?.let { auditShift(it, now, "Kiste ${box.box.displayNumber} als gelöscht markiert", reason) }
         shift?.let { dao.getShift(it.id) }
     }
 

@@ -261,7 +261,7 @@ private fun InfoDialog(close: () -> Unit) = AlertDialog(
     title = { Text("AV-Erfassung", fontWeight = FontWeight.Black, color = DhlRed) },
     text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Version 2.0.0", fontWeight = FontWeight.Bold)
+            Text("Version 2.0.1", fontWeight = FontWeight.Bold)
             HorizontalDivider()
             Text("Developer", fontWeight = FontWeight.Bold)
             Text("Ralf Krümmel")
@@ -522,6 +522,7 @@ private fun ShiftReportScreen(item: ShiftWithData, vm: MainViewModel) {
     var editProcess by remember { mutableStateOf<WorkProcessEntity?>(null) }
     var addProcess by remember { mutableStateOf(false) }
     var cancelProcess by remember { mutableStateOf<WorkProcessEntity?>(null) }
+    var deleteShiftBox by remember { mutableStateOf<BoxWithInterruptions?>(null) }
     val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
@@ -550,12 +551,23 @@ private fun ShiftReportScreen(item: ShiftWithData, vm: MainViewModel) {
             item { Stat("Pause", stats.breakMillis.asDuration()) }
             item { Stat("Produktive Zeit", stats.productiveMillis.asDuration(), strong = true) }
             if (stats.unclassifiedMillis > 0) item { Stat("Nicht klassifiziert", stats.unclassifiedMillis.asDuration(), strong = true) }
-            item { Text("Chronologie", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp)) }
+            item {
+                Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Chronologie", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    if (teamLeader) Text("Teamleiter-Modus: Kisten können hier direkt bearbeitet oder vollständig gelöscht werden.", color = DhlDarkRed, fontWeight = FontWeight.Bold)
+                }
+            }
             items(item.boxes.sortedBy { it.box.startedAtUtc }, key = { "b${it.box.id}" }) { box ->
-                Card(Modifier.fillMaxWidth().clickable { vm.showDetail(box) }, colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(Modifier.padding(11.dp)) {
                         Text("Kiste ${box.box.displayNumber} · ${box.box.type.label}", fontWeight = FontWeight.Bold)
                         Text("${time(box.box.startedAtUtc)}–${box.box.endedAtUtc?.let(::time) ?: "läuft"} · Netto ${box.netMillis().asDuration()}")
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { vm.showDetail(box) }) { Text(if (teamLeader) "BEARBEITEN" else "ÖFFNEN") }
+                            if (teamLeader && box.box.endedAtUtc != null) {
+                                TextButton(onClick = { deleteShiftBox = box }) { Text("GESAMTE KISTE LÖSCHEN", color = DhlDarkRed) }
+                            }
+                        }
                     }
                 }
             }
@@ -593,6 +605,13 @@ private fun ShiftReportScreen(item: ShiftWithData, vm: MainViewModel) {
     } }
     cancelProcess?.let { process -> ReasonDialog("Prozess wirklich löschen?", { cancelProcess = null }) { reason ->
         cancelProcess = null; vm.cancelManualProcess(process, reason)
+    } }
+    deleteShiftBox?.let { box -> ReasonDialog(
+        "Gesamte Kiste ${box.box.displayNumber} löschen?",
+        { deleteShiftBox = null },
+    ) { reason ->
+        deleteShiftBox = null
+        vm.deleteBoxAsTeamLeader(box, reason)
     } }
 }
 

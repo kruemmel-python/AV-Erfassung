@@ -32,7 +32,7 @@ Der neun Stunden gültige Schlüssel schaltet die manuelle Bearbeitung frei. Bea
 
 Automatisiert geprüft werden unter anderem reguläre und montagsbedingte Überlappungen, Nacht-/Datumswechsel, DST, Zeitberechnung, Teamleiter-Schlüssel, manuelle Intervalle, die Referenz-Nachtschicht, Kistenwechselstatistik sowie CSV-Spalten, Null-Kisten und Maskierung. Ergebnis: 22 Tests, 0 Fehler.
 
-Release: AV-Erfassung `2.0.0` (`versionCode 8`). Beide APKs sind mit APK Signature Scheme v2 signiert.
+Release: AV-Erfassung `2.0.1` (`versionCode 9`). Beide APKs sind mit APK Signature Scheme v2 signiert.
 
 ## Manuelle Nachprüfung nach Update
 

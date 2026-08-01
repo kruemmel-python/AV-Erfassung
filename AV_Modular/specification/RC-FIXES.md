@@ -1,4 +1,4 @@
-# AVM 1.0.0-RC1 Fix-Register
+# AVM 1.0.0-RC1 → RC2 Fix-Register
 
 Seit dem Feature Freeze sind keine neuen Produktfunktionen zulässig. Korrekturen müssen Konformität, Sicherheit, Reproduzierbarkeit, Testvektoren, Release-Metadaten, Lizenzen oder normative Eindeutigkeit betreffen. Eine Änderung des normativen Verhaltens erfordert einen neuen Candidate-Level.
 
@@ -64,3 +64,12 @@ Seit dem Feature Freeze sind keine neuen Produktfunktionen zulässig. Korrekture
 - Kompatibilität: Ausschließlich Veröffentlichungsmetadaten.
 - Teständerung: Der Releasebefehl setzt `--prerelease` explizit.
 - Commit: Bestandteil des kontrollierten RC1-Fix-Commits.
+
+## RC1-FIX-008 – Unveränderlicher RC2-Produktrelease
+
+- Problem: Die nach RC1 abgeschlossenen Härtungen und das Interoperabilitäts-Gate waren noch nicht als eigener signierter Candidate veröffentlicht; die drei produktiven Anwendungen nutzten unterschiedliche Releaseverfahren.
+- Auswirkung: Aktuelle AVM-Artefakte und die Produktanwendungen konnten nicht aus demselben sauberen Commit und derselben kontrollierten Freigabezeremonie bezogen werden.
+- Verträge: Release-Metadaten und Artefaktmanifest; normative AVM-Verträge bleiben unverändert.
+- Kompatibilität: RC2 ist verhaltenskompatibel zu RC1 und erhält eigene unveränderliche Artefakte und Tags.
+- Teständerung: Der gemeinsame Produktrelease baut Android, Qt/C++, AVM Conformance und Interoperabilität warnungsfrei, verifiziert drei APK-Signaturen und bindet alle Downloads über SHA-256 sowie GitHub Attestations.
+- Commit: Bestandteil des kontrollierten RC2-Release-Commits.

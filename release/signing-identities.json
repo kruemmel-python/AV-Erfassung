@@ -1,0 +1,27 @@
+{
+  "contract": "av-product-signing-identities-1.0",
+  "generated_at_utc": "2026-08-01T00:00:00Z",
+  "identities": [
+    {
+      "application_id": "de.postkisten.tracker",
+      "key_id": "av-erfassung-2026-01",
+      "certificate_sha256": "17222a2b4bea97243191be2a02230acaf2701920a4f47f0bdff57ba439ae7fc5",
+      "status": "ACTIVE",
+      "first_production_version": "2.1.0"
+    },
+    {
+      "application_id": "de.postkisten.keygenerator",
+      "key_id": "teamleiter-keygenerator-2026-01",
+      "certificate_sha256": "1bc9ccd3f8cb1dc8534449f26bd37f45dff40e3e4f26b8bcb1d36c208307195f",
+      "status": "ACTIVE",
+      "first_production_version": "1.1.0"
+    },
+    {
+      "application_id": "de.av.modular.capture",
+      "key_id": "avm-enterprise-capture-2026-01",
+      "certificate_sha256": "c7d0d4c2efe8aa0385e12326208df486abf5f19072aa0ec520d21be1966fc9a9",
+      "status": "ACTIVE",
+      "first_production_version": "1.0.0-RC1"
+    }
+  ]
+}

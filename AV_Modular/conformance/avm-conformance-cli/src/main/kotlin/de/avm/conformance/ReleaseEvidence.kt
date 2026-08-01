@@ -105,19 +105,21 @@ object ReleaseEvidence {
         val sbom = AvmSbom(components = listOf(
             SbomComponent("application", "AVM Specification", RC_VERSION),
             SbomComponent("application", "AVM Conformance", RC_VERSION),
+            SbomComponent("application", "AVM Interoperability", RC_VERSION),
+            SbomComponent("application", "AVM Enterprise Demo CLI", RC_VERSION),
             SbomComponent("application", "AVM Enterprise Capture", RC_VERSION),
             SbomComponent("application", "AVM Enterprise Reporter", RC_VERSION),
             SbomComponent("application", "AVM Enterprise Designer", RC_VERSION),
             SbomComponent("application", "AVM Enterprise Profile Tool", RC_VERSION),
             SbomComponent("library", "AVM Native Plugin ABI", "1"),
         ))
-        val sbomFile = outputDirectory.resolve("AVM-1.0.0-RC1-SBOM.cdx.json")
+        val sbomFile = outputDirectory.resolve("AVM-1.0.0-RC2-SBOM.cdx.json")
         Files.writeString(sbomFile, RELEASE_PRETTY_JSON.encodeToString(sbom))
         val sbomDigest = sha256(Files.readAllBytes(sbomFile))
 
         val artifacts = artifactPaths(identity.officialRelease).map { relative ->
             val file = root.resolve(relative)
-            require(Files.isRegularFile(file)) { "RC1-Artefakt fehlt: $relative" }
+            require(Files.isRegularFile(file)) { "RC2-Artefakt fehlt: $relative" }
             ReleaseArtifact(relative, Files.size(file), sha256(Files.readAllBytes(file)))
         } + ReleaseArtifact("build/distributions/${sbomFile.fileName}", Files.size(sbomFile), sbomDigest)
 
@@ -132,7 +134,7 @@ object ReleaseEvidence {
             unsignedManifest.artifacts, manifestSignature.first, manifestSignature.second,
         )
         require(verify(manifest.unsigned(), manifest.evidenceDigest, manifest.signature)) { "Artefaktmanifest-Signatur ist ungültig" }
-        val manifestFile = outputDirectory.resolve("AVM-1.0.0-RC1-SHA256SUMS.json")
+        val manifestFile = outputDirectory.resolve("AVM-1.0.0-RC2-SHA256SUMS.json")
         Files.writeString(manifestFile, RELEASE_PRETTY_JSON.encodeToString(manifest))
         val manifestDigest = sha256(Files.readAllBytes(manifestFile))
 
@@ -161,20 +163,22 @@ object ReleaseEvidence {
             envelopeSignature.first, envelopeSignature.second,
         )
         require(verify(envelope.unsigned(), envelope.evidenceDigest, envelope.signature)) { "Release-Envelope-Signatur ist ungültig" }
-        Files.writeString(outputDirectory.resolve("AVM-1.0.0-RC1-RELEASE-ENVELOPE.json"), RELEASE_PRETTY_JSON.encodeToString(envelope))
+        Files.writeString(outputDirectory.resolve("AVM-1.0.0-RC2-RELEASE-ENVELOPE.json"), RELEASE_PRETTY_JSON.encodeToString(envelope))
     }
 
     private fun artifactPaths(officialRelease: Boolean) = listOf(
-        "build/distributions/AVM-Specification-1.0.0-RC1.zip",
-        "conformance/avm-conformance-cli/build/distributions/avm-conformance-1.0.0-RC1.zip",
+        "build/distributions/AVM-Specification-1.0.0-RC2.zip",
+        "conformance/avm-conformance-cli/build/distributions/avm-conformance-1.0.0-RC2.zip",
+        "conformance/avm-interoperability/build/distributions/avm-interoperability-1.0.0-RC2.zip",
         if (officialRelease) {
             "enterprise/capture-android/build/outputs/apk/release/capture-android-release.apk"
         } else {
             "enterprise/capture-android/build/outputs/apk/debug/capture-android-debug.apk"
         },
-        "enterprise/reporter-cli/build/distributions/reporter-cli-1.0.0-RC1.zip",
-        "enterprise/designer-desktop/build/distributions/designer-desktop-1.0.0-RC1.zip",
-        "enterprise/profile-tool/build/distributions/profile-tool-1.0.0-RC1.zip",
+        "enterprise/demo-cli/build/distributions/demo-cli-1.0.0-RC2.zip",
+        "enterprise/reporter-cli/build/distributions/reporter-cli-1.0.0-RC2.zip",
+        "enterprise/designer-desktop/build/distributions/designer-desktop-1.0.0-RC2.zip",
+        "enterprise/profile-tool/build/distributions/profile-tool-1.0.0-RC2.zip",
         "build/native-conformance-win/avm_canonical_golden.exe",
         "build/native-host-win/av_module_host_test.exe",
     )
@@ -221,6 +225,6 @@ object ReleaseEvidence {
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 }
 
-private const val RC_VERSION = "1.0.0-RC1"
+private const val RC_VERSION = "1.0.0-RC2"
 private val RELEASE_JSON = Json { encodeDefaults = true; explicitNulls = true }
 private val RELEASE_PRETTY_JSON = Json { encodeDefaults = true; explicitNulls = true; prettyPrint = true }

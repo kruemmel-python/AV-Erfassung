@@ -30,14 +30,16 @@ tasks.named<JavaExec>("run") {
     args("test", "all", rootProject.projectDir.absolutePath)
 }
 
-val releaseEvidence by tasks.registering(JavaExec::class) {
+val releaseEvidence = tasks.register<JavaExec>("releaseEvidence") {
     group = "distribution"
-    description = "Creates the cryptographically bound AVM RC1 release evidence."
+    description = "Creates the cryptographically bound AVM RC2 release evidence."
     dependsOn(":avmConformance")
     dependsOn(":avmSpecificationArchive")
     dependsOn(":avm-conformance:distZip")
+    dependsOn(":avm-interoperability:distZip")
     dependsOn(":capture-android:assembleDebug")
     dependsOn(":capture-android:assembleRelease")
+    dependsOn(":demo-cli:distZip")
     dependsOn(":reporter-cli:distZip")
     dependsOn(":designer-desktop:distZip")
     dependsOn(":profile-tool:distZip")

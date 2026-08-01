@@ -1,6 +1,6 @@
 # AVM Conformance
 
-AVM Conformance 1.0.0-RC1 zertifiziert Implementierungen gegen AVM Specification. Die Suite enthält positive Golden-Vektoren, aktive Angriffsfälle, fünf abgestufte Zertifizierungsprofile, stabile Fehlercodes und zwei voneinander unabhängige Vertragsimplementierungen in Kotlin und C++.
+AVM Conformance 1.0.0-RC2 zertifiziert Implementierungen gegen AVM Specification. Die Suite enthält positive Golden-Vektoren, aktive Angriffsfälle, fünf abgestufte Zertifizierungsprofile, stabile Fehlercodes und zwei voneinander unabhängige Vertragsimplementierungen in Kotlin und C++.
 
 ```powershell
 .\gradlew.bat avmConformance --warning-mode=all

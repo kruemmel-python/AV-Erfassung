@@ -54,7 +54,7 @@ class LegacyMigrationService(
             )
             shift = dao.getShift(id)?.shift ?: error("Migrierte Schicht konnte nicht geladen werden.")
         }
-        val assignedShift = shift ?: error("Schichtzuordnung fehlgeschlagen.")
+        val assignedShift = shift
         dao.updateBox(
             box.copy(
                 shiftId = assignedShift.id,

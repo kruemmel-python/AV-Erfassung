@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
     val profile = loader.loadProfile(root.resolve("enterprise/profiles/demo_dhl"))
     val runtime = PlatformRuntime.create(module, profile, DevelopmentProfileVerifier)
 
-    println("AV Modular Enterprise 1.0.0-RC1")
+    println("AV Modular Enterprise 1.0.0-RC2")
     println("Profil: ${runtime.profile.profile.displayName}")
     println("Modul: ${runtime.module.source.manifest.displayName} ${runtime.module.source.manifest.moduleVersion}")
     println("Vorgänge: ${runtime.module.workItems.values.joinToString { it.displayName }}")

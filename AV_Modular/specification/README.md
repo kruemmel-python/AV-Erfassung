@@ -1,6 +1,6 @@
 # AVM Specification
 
-AVM Specification 1.0.0-RC1 ist die eingefrorene Standard-Candidate-Fassung der herstellerneutralen, normativen Vertragsbasis von AV Modular. Die Schlüsselwörter **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT** und **MAY** sind gemäß RFC 2119 auszulegen. Maschinenlesbare Schemas sind normativ; Beispiele und Referenzcode erläutern deren Anwendung.
+AVM Specification 1.0.0-RC2 ist die aktuelle eingefrorene Standard-Candidate-Fassung der herstellerneutralen, normativen Vertragsbasis von AV Modular. Sie übernimmt die normativen Verträge von RC1 unverändert und ergänzt Supply-Chain- sowie Interoperabilitätsnachweise. Die Schlüsselwörter **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT** und **MAY** sind gemäß RFC 2119 auszulegen. Maschinenlesbare Schemas sind normativ; Beispiele und Referenzcode erläutern deren Anwendung.
 
 Jeder veröffentlichte Vertrag besitzt eine stabile Kennung, eine unabhängige Versionsnummer, positive und negative Testvektoren sowie eine benannte Referenzimplementierung. Inkompatible Änderungen benötigen eine neue Hauptversion und ein AVM Enhancement Proposal (AVM-EP).
 

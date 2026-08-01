@@ -1,7 +1,7 @@
 {
   "module_id": "mail_processing",
   "schema_version": 1,
-  "module_version": "1.0.0-RC1",
+  "module_version": "1.0.0-RC2",
   "display_name": "Postbearbeitung",
   "minimum_core_version": "1.0.0",
   "processes_file": "processes.json",

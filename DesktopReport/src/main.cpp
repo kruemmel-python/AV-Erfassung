@@ -9,7 +9,7 @@
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("AV-Schichtreport"));
-    QApplication::setApplicationVersion(QStringLiteral("1.0.0"));
+    QApplication::setApplicationVersion(QString::fromLatin1(AV_SCHICHTREPORT_VERSION));
     QApplication::setOrganizationName(QStringLiteral("Ralf Krümmel"));
 
     QStringList files;

@@ -28,9 +28,15 @@ class ConformanceRunnerTest {
             assertEquals("trusted-official-release", report.signature.trustStatus)
             assertTrue(report.signature.officialRelease)
         } else {
-            assertEquals("ephemeral-test-key", report.signature.signerType)
-            assertEquals("untrusted-development-evidence", report.signature.trustStatus)
             assertFalse(report.signature.officialRelease)
+            when (report.signature.signerType) {
+                "ephemeral-test-key" -> assertEquals("untrusted-development-evidence", report.signature.trustStatus)
+                "organization-managed-release-key" -> assertEquals(
+                    "externally-configured-development-evidence",
+                    report.signature.trustStatus,
+                )
+                else -> error("Unbekannter Signaturtyp: ${report.signature.signerType}")
+            }
         }
         assertTrue(report.implementation.commit.matches(Regex("[0-9a-f]{40}")))
         val first = report.results.first()

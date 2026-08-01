@@ -1,4 +1,4 @@
-name: AVM RC1 Clean Conformance
+name: AVM Clean Conformance
 
 on:
   push:
@@ -45,27 +45,39 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
-      - name: Install isolated Android SDK 36
+      - name: Install isolated Android SDK 37
         shell: pwsh
         run: |
-          $sdk = Join-Path $env:RUNNER_TEMP "android-sdk-36"
+          $sdk = Join-Path $env:RUNNER_TEMP "android-sdk-37"
           New-Item -ItemType Directory -Force -Path $sdk | Out-Null
           Copy-Item -Recurse -Force (Join-Path $env:ANDROID_HOME "licenses") (Join-Path $sdk "licenses")
-          sdkmanager "--sdk_root=$sdk" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-          if ($LASTEXITCODE -ne 0) { throw "Android SDK installation failed" }
+          $archive = Join-Path $env:RUNNER_TEMP "commandlinetools-win-15859902_latest.zip"
+          Invoke-WebRequest "https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip" -OutFile $archive
+          $archiveHash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          if ($archiveHash -ne "90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a") { throw "Android command-line tools digest mismatch" }
+          $expanded = Join-Path $env:RUNNER_TEMP "android-commandline-tools"
+          Expand-Archive -LiteralPath $archive -DestinationPath $expanded
+          $commandLineTools = Join-Path $sdk "cmdline-tools\latest"
+          New-Item -ItemType Directory -Force -Path (Split-Path $commandLineTools) | Out-Null
+          Move-Item -LiteralPath (Join-Path $expanded "cmdline-tools") -Destination $commandLineTools
+          $androidCli = Join-Path $commandLineTools "bin\android.exe"
+          & $androidCli "--sdk=$sdk" sdk install --canary "platforms/android-37.0" "platform-tools" "build-tools/36.0.0"
+          if (-not (Test-Path (Join-Path $sdk "platforms\android-37.0\android.jar")) -or -not (Test-Path (Join-Path $sdk "build-tools\36.0.0\apksigner.bat"))) {
+            throw "Android SDK installation failed"
+          }
           "ANDROID_HOME=$sdk" >> $env:GITHUB_ENV
           "ANDROID_SDK_ROOT=$sdk" >> $env:GITHUB_ENV
-      - name: Clean RC1 build
+      - name: Clean AVM candidate build
         shell: msys2 {0}
         env:
           AVM_BUILD_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          ./gradlew.bat --no-daemon clean --warning-mode=all
-          ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=all
+          ./gradlew.bat --no-daemon clean --warning-mode=fail
+          ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=fail
       - name: Upload signed evidence and release artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: avm-1.0.0-rc1-${{ github.run_id }}
+          name: avm-1.0.0-rc2-${{ github.run_id }}
           if-no-files-found: error
           path: |
             AV_Modular/build/distributions/**

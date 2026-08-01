@@ -18,12 +18,16 @@ AV-Erfassung ist eine lokal arbeitende Gesamtlösung für die Erfassung und Ausw
 
 | Anwendung | Plattform | Version | Aufgabe | Download |
 | --- | --- | ---: | --- | --- |
-| **AV-Erfassung** | Android 8 oder neuer | 2.0.3 | Schichten, Kisten, Arbeitsprozesse und Unterbrechungen erfassen | [APK](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/AV-Erfassung-release.apk) |
-| **Teamleiter-Keygenerator** | Android 8 oder neuer | 1.0.0 | Neun Stunden gültige Freigabeschlüssel für Korrekturen erzeugen | [APK](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/Teamleiter-Keygenerator-release.apk) |
-| **AV-Schichtreport** | Windows, portabel | 1.0.0 | CSV-Dateien importieren, Änderungen prüfen und QS-Berichte erstellen | [ZIP](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/AV-Schichtreport-portable.zip) |
+| **AV-Erfassung** | Android 8 oder neuer | 2.1.0 | Schichten, Kisten, Arbeitsprozesse und Unterbrechungen erfassen | [APK](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/AV-Erfassung-release.apk) |
+| **Teamleiter-Keygenerator** | Android 8 oder neuer | 1.1.0 | Neun Stunden gültige Freigabeschlüssel für Korrekturen erzeugen | [APK](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/Teamleiter-Keygenerator-release.apk) |
+| **AV-Schichtreport** | Windows, portabel | 1.1.0 | CSV-Dateien importieren, Änderungen prüfen und QS-Berichte erstellen | [ZIP](https://github.com/kruemmel-python/AV-Erfassung/releases/latest/download/AV-Schichtreport-portable.zip) |
+| **AV Modular Enterprise** | Android und Windows | 1.0.0-RC2 | Vertragsbasierte Capture-, Designer-, Reporting- und Profilwerkzeuge | [AVM Release](https://github.com/kruemmel-python/AV-Erfassung/releases/tag/avm-v1.0.0-rc2) |
 
 > [!IMPORTANT]
 > Der Teamleiter-Keygenerator gehört ausschließlich auf geschützte Geräte berechtigter Teamleiter. Er darf nicht auf Mitarbeitergeräten installiert oder frei weitergegeben werden.
+
+> [!WARNING]
+> Version 2.1.0 führt getrennte Produktionssignaturen für beide Android-Apps ein. Alte, mit dem Debugkeystore signierte Pilotversionen müssen einmalig deinstalliert werden. Vorher sind benötigte Schichtdaten zu exportieren. Ab diesem Release sind reguläre signaturgleiche Updates möglich.
 
 ## Zusammenspiel der drei Anwendungen
 
@@ -176,11 +180,10 @@ Weitere Erläuterungen und anonymisierte Bildschirmabbildungen enthält das [beb
 
 ### Android-Apps
 
-Voraussetzungen sind JDK 17 und Android SDK 35. Das Ziel-SDK ist Android 14 (API 34), die Mindestversion Android 8 (API 26).
+Voraussetzungen sind JDK 17, Android SDK Platform 37.0 und Build Tools 36.0.0. Das Ziel-SDK ist Android 17 (API 37), die Mindestversion Android 8 (API 26).
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:assembleRelease
-.\gradlew.bat :keygenerator:testDebugUnitTest :keygenerator:assembleRelease
+.\gradlew.bat clean :app:testDebugUnitTest :keygenerator:testDebugUnitTest :app:lintRelease :keygenerator:lintRelease :app:assembleRelease :keygenerator:assembleRelease --warning-mode=fail
 ```
 
 Die erzeugten APK-Dateien liegen anschließend unter:
@@ -201,8 +204,8 @@ cd DesktopReport
 
 Das portable Paket wird unter `DesktopReport/dist/AV-Schichtreport-portable.zip` erzeugt.
 
-> [!NOTE]
-> Die bereitgestellten Android-Pakete sind interne Pilotbuilds und verwenden aktuell den Android-Debugkeystore. Vor einer öffentlichen oder produktiven Verteilung muss ein eigener, sicher verwahrter Release-Keystore konfiguriert werden.
+> [!IMPORTANT]
+> Produktive APKs werden ausschließlich im geschützten GitHub-Release-Environment mit getrennten Produktionsschlüsseln signiert. Ein lokaler Release-Build benötigt die in den Gradle-Dateien dokumentierten Keystore-Umgebungsvariablen; ohne diese Variablen entsteht kein als produktiv auslieferbares Paket.
 
 ## Projektstruktur
 

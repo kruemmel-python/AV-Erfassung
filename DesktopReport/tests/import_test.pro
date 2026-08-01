@@ -3,6 +3,7 @@ CONFIG += console c++17
 CONFIG -= app_bundle
 TEMPLATE = app
 TARGET = import_test
+QMAKE_CXXFLAGS += -Wall -Wextra -Werror
 
 INCLUDEPATH += ../src
 SOURCES += import_test.cpp ../src/csvimporter.cpp ../src/reportdata.cpp

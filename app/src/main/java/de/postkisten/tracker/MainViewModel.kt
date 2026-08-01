@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.postkisten.tracker.data.BoxWithInterruptions
@@ -227,7 +228,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repository.exportShifts(ids, type)
 
     fun recordSuccessfulExport(timestamp: Long = System.currentTimeMillis()) {
-        preferences.edit().putLong("last_successful_export", timestamp).apply()
+        preferences.edit { putLong("last_successful_export", timestamp) }
         _lastSuccessfulExport.value = timestamp
     }
 

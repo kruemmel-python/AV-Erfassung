@@ -37,7 +37,7 @@ void shutdown() { initialized = false; }
 const AvModuleApiV1 api = {
     AV_MODULE_ABI_VERSION_1,
     "example_native",
-    "1.0.0-RC1",
+    "1.0.0-RC2",
     initialize,
     validate_record,
     process_event,

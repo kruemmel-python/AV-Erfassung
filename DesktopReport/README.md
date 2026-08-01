@@ -1,4 +1,4 @@
-# AV-Schichtreport (Windows Desktop)
+# AV-Schichtreport 1.1.0 (Windows Desktop)
 
 Die C++/Qt-Desktop-App importiert einen oder mehrere CSV-Schichtexporte der Android-App **AV-Erfassung** und stellt sie verständlich als Mitarbeiter- und Teamauswertung dar.
 
@@ -33,7 +33,7 @@ Voraussetzungen: Qt 5.15 mit MinGW unter `C:\msys64\mingw64`.
 .\build-portable.ps1
 ```
 
-Das portable Paket wird unter `dist\AV-Schichtreport-portable.zip` erstellt.
+Das Buildskript kompiliert und startet zuerst die Importtests, baut anschließend die Anwendung mit `-Wall -Wextra -Werror` und erzeugt das portable Paket unter `dist\AV-Schichtreport-portable.zip`.
 
 ## Bebildertes Handbuch
 

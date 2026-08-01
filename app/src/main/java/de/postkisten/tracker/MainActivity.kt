@@ -2,6 +2,7 @@ package de.postkisten.tracker
 
 import android.Manifest
 import android.app.Application
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -53,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -60,16 +62,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.pm.PackageInfoCompat
+import androidx.core.net.toUri
 import de.postkisten.tracker.data.BoxWithInterruptions
 import de.postkisten.tracker.data.BoxType
 import de.postkisten.tracker.data.ClockSnapshot
@@ -271,7 +275,9 @@ private fun ShiftSelectionDialog(
 @Composable
 private fun InfoScreen(vm: MainViewModel) {
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
+    val appBuildInfo = remember(context) { context.applicationBuildInfo() }
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     val activeShift by vm.activeShift.collectAsState()
     val storedShiftCount by vm.storedShiftCount.collectAsState()
     val storedBoxCount by vm.storedBoxCount.collectAsState()
@@ -282,8 +288,8 @@ private fun InfoScreen(vm: MainViewModel) {
     val diagnostics = remember(activeShift, storedShiftCount, storedBoxCount, lastExport) {
         buildString {
             appendLine("AV-Erfassung – Diagnosedaten")
-            appendLine("App-Version: ${BuildConfig.VERSION_NAME}")
-            appendLine("Build-Nummer: ${BuildConfig.VERSION_CODE} · ${BuildConfig.BUILD_ID}")
+            appendLine("App-Version: ${appBuildInfo.versionName}")
+            appendLine("Build-Nummer: ${appBuildInfo.versionCode} · ${appBuildInfo.buildId}")
             appendLine("Android-Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
             appendLine("Datenbankversion: ${TrackerDatabase.DATABASE_VERSION}")
             appendLine("Schema-Version: ${TrackerDatabase.DATA_SCHEMA_VERSION}")
@@ -316,7 +322,7 @@ private fun InfoScreen(vm: MainViewModel) {
                     )
                     Text("AV-ERFASSUNG", fontSize = 26.sp, fontWeight = FontWeight.Black, color = DhlRed)
                     Text(
-                        "Version ${BuildConfig.VERSION_NAME} · Build ${BuildConfig.BUILD_ID}",
+                        "Version ${appBuildInfo.versionName} · Build ${appBuildInfo.buildId}",
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                     )
@@ -379,8 +385,8 @@ private fun InfoScreen(vm: MainViewModel) {
             }
             if (showDetails) item {
                 InfoSection("TECHNISCHE DETAILS") {
-                    InfoRow("App-Version", BuildConfig.VERSION_NAME)
-                    InfoRow("Build-Nummer", "${BuildConfig.VERSION_CODE} · ${BuildConfig.BUILD_ID}")
+                    InfoRow("App-Version", appBuildInfo.versionName)
+                    InfoRow("Build-Nummer", "${appBuildInfo.versionCode} · ${appBuildInfo.buildId}")
                     InfoRow("Android-Version", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
                     InfoRow("Datenbankversion", TrackerDatabase.DATABASE_VERSION.toString())
                     InfoRow("Schema-Version", TrackerDatabase.DATA_SCHEMA_VERSION.toString())
@@ -393,7 +399,9 @@ private fun InfoScreen(vm: MainViewModel) {
                     BigButton(
                         if (copied) "DIAGNOSEDATEN KOPIERT" else "DIAGNOSEDATEN KOPIEREN",
                         {
-                            clipboard.setText(AnnotatedString(diagnostics))
+                            clipboardScope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("AV-Erfassung Diagnosedaten", diagnostics)))
+                            }
                             copied = true
                         },
                         Modifier.fillMaxWidth().height(54.dp),
@@ -431,12 +439,24 @@ private fun InfoRow(label: String, value: String) {
 }
 
 private fun openSupportEmail(context: Context, diagnostics: String) {
-    val subject = Uri.encode("Fehlermeldung AV-Erfassung ${BuildConfig.VERSION_NAME} (${BuildConfig.BUILD_ID})")
+    val appBuildInfo = context.applicationBuildInfo()
+    val subject = Uri.encode("Fehlermeldung AV-Erfassung ${appBuildInfo.versionName} (${appBuildInfo.buildId})")
     val body = Uri.encode("Bitte beschreiben Sie den Fehler:\n\n\n--- Technische Diagnose (ohne Arbeits- und Personaldaten) ---\n$diagnostics")
-    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:ralf.kruemmel@outlook.de?subject=$subject&body=$body"))
+    val intent = Intent(Intent.ACTION_SENDTO, "mailto:ralf.kruemmel@outlook.de?subject=$subject&body=$body".toUri())
     runCatching { context.startActivity(intent) }.onFailure {
         Toast.makeText(context, "Keine E-Mail-App verfügbar.", Toast.LENGTH_LONG).show()
     }
+}
+
+private data class AppBuildInfo(val versionName: String, val versionCode: Long, val buildId: String)
+
+private fun Context.applicationBuildInfo(): AppBuildInfo {
+    val packageInfo = packageManager.getPackageInfo(packageName, 0)
+    return AppBuildInfo(
+        versionName = packageInfo.versionName.orEmpty(),
+        versionCode = PackageInfoCompat.getLongVersionCode(packageInfo),
+        buildId = getString(R.string.build_id),
+    )
 }
 
 private fun infoTimestamp(value: Long): String = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
@@ -1040,7 +1060,7 @@ private fun ManualProcessDialog(
 ) {
     val now = System.currentTimeMillis()
     var type by remember(process?.id) { mutableStateOf(process?.type ?: ProcessType.REGISTRATION) }
-    var shiftId by remember(process?.id) { mutableStateOf(initialShiftId) }
+    var shiftId by remember(process?.id) { mutableLongStateOf(initialShiftId) }
     var start by remember(process?.id) { mutableStateOf(editDateTimeFormatter.format((process?.startedAtUtc ?: now).asInstant())) }
     var end by remember(process?.id) { mutableStateOf(editDateTimeFormatter.format((process?.endedAtUtc ?: (now + 60_000)).asInstant())) }
     var note by remember(process?.id) { mutableStateOf(process?.note.orEmpty()) }

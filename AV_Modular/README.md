@@ -1,6 +1,6 @@
 # AV Modular
 
-AV Modular ist eine vertragsgetriebene Plattform für revisionssichere Schicht- und Prozessdatenerfassung. Der eingefrorene Stand trägt die Bezeichnung **AVM 1.0 Standard Candidate / 1.0.0-RC1**. Das Repository trennt den offenen technischen Vertrag, dessen unabhängige Nachweisführung und das produktive Enterprise-System physisch und im Build.
+AV Modular ist eine vertragsgetriebene Plattform für revisionssichere Schicht- und Prozessdatenerfassung. Der aktuelle eingefrorene Stand trägt die Bezeichnung **AVM 1.0 Standard Candidate / 1.0.0-RC2**. Das Repository trennt den offenen technischen Vertrag, dessen unabhängige Nachweisführung und das produktive Enterprise-System physisch und im Build.
 
 ## Produktaufteilung
 
@@ -100,7 +100,7 @@ Für ein organisationsvertrauenswürdiges Conformance-Zertifikat werden `AVM_CON
 
 `gradlew avmReleaseCandidate` erzeugt ein signiertes Artefaktmanifest mit neun Digests, eine CycloneDX-SBOM, den daran gebundenen finalen Conformance-Report und ein signiertes Release-Envelope als oberste Vertrauenseinheit. Der offizielle Modus verweigert dirty Arbeitsstände und Builds ohne externen CI-Lauf. Der CI-Clean-Build ist auf Repository-Ebene unter `.github/workflows/avm-rc1-conformance.yml` definiert; Commit, Organisationssignatur, Tag und Veröffentlichung bleiben ein gesonderter Freigabevorgang.
 
-Die offizielle Freigabe läuft ausschließlich über `.github/workflows/avm-rc1-release.yml` aus `main`. Sie verwendet die geschützte GitHub-Umgebung `avm-release`, prüft den registrierten Ed25519-Vertrauensanker, erzeugt eine signierte Android-Release-APK, erstellt eine GitHub-Provenienzattestierung und veröffentlicht anschließend den annotierten Tag `avm-v1.0.0-rc1` samt unveränderlichem GitHub Release.
+Die offizielle RC2-Freigabe läuft ausschließlich über `.github/workflows/product-suite-release.yml` aus `main`. Sie verwendet die geschützte GitHub-Umgebung `avm-release`, prüft den registrierten Ed25519-Vertrauensanker, erzeugt eine signierte Android-Release-APK, erstellt eine GitHub-Provenienzattestierung und veröffentlicht anschließend den annotierten Tag `avm-v1.0.0-rc2` samt unveränderlichem GitHub Pre-Release.
 
 - [Normative Spezifikation](specification/README.md)
 - [Governance](specification/GOVERNANCE.md)

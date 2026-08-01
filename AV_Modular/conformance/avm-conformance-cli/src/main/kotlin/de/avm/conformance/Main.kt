@@ -214,7 +214,7 @@ class ConformanceRunner(private val root: Path) {
         val output = generatedPath("package-revoked.avpkg")
         val keys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
         val service = ConfigurationPackageService(clock = FIXED_CLOCK)
-        service.create(source, output, "conformance-package", "1.0.0-RC1", "conformance-revoked", keys.private)
+        service.create(source, output, "conformance-package", "1.0.0-RC2", "conformance-revoked", keys.private)
         val verification = service.verify(output, mapOf("conformance-revoked" to keys.public), setOf("conformance-revoked"))
         return if (!verification.valid) Observation(REJECT, verification.error, verification.message) else Observation(ACCEPT)
     }
@@ -503,8 +503,8 @@ object ConformanceEvidence {
             require(!source.dirty) { "Offizielle Evidence erfordert einen sauberen Arbeitsbaum" }
             require(System.getenv("GITHUB_SHA") == source.commit) { "Geprüfte Quellassertion und Runner-Commit stimmen nicht überein" }
             val workflowRef = System.getenv("GITHUB_WORKFLOW_REF").orEmpty()
-            require(workflowRef.contains("/.github/workflows/avm-rc1-release.yml@refs/heads/main")) {
-                "Offizielle Evidence erfordert den freigegebenen RC1-Releaseworkflow aus main"
+            require(workflowRef.contains("/.github/workflows/product-suite-release.yml@refs/heads/main")) {
+                "Offizielle Evidence erfordert den freigegebenen Produkt- und RC2-Releaseworkflow aus main"
             }
             require(!System.getenv("GITHUB_RUN_ID").isNullOrBlank()) { "Offizielle Evidence erfordert eine externe Run-ID" }
             require(System.getenv("AVM_RELEASE_ENVIRONMENT") == "avm-release") { "Geschützte Releaseumgebung fehlt" }
@@ -592,7 +592,7 @@ private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 private const val ACCEPT = "ACCEPT"
 private const val REJECT = "REJECT"
 private const val REPORT_CONTRACT = "avm-conformance-report-1.0"
-private const val VERSION = "1.0.0-RC1"
+private const val VERSION = "1.0.0-RC2"
 private val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-08-01T12:00:00Z"), ZoneOffset.UTC)
 private val JSON = Json { encodeDefaults = true; explicitNulls = true }
 private val PRETTY_JSON = Json { encodeDefaults = true; explicitNulls = true; prettyPrint = true }

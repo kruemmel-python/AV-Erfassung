@@ -2,6 +2,8 @@
 
 AVM 1.0.0-RC1 wurde am 1. August 2026 offiziell aus dem sauberen Commit `e8a9fc73d3184355b76910c9ba24cf29e5478214` veröffentlicht. Der annotierte Tag `avm-v1.0.0-rc1` und die organisationssignierte Evidence bilden den unveränderlichen Referenzpunkt. Ein lokaler Task `gradlew avmReleaseCandidate --no-daemon --warning-mode=all` erzeugt weiterhin ausschließlich Development Evidence mit `official_release: false`.
 
+AVM 1.0.0-RC2 bündelt die seit RC1 dokumentierten semantikneutralen Härtungen: unveränderliche Action-SHAs, maschinelle Supply-Chain-Prüfung, getrennte Interoperabilitäts-Evidence und das explizite externe Final-Gate. RC1 und seine Artefakte werden nicht ersetzt. RC2 erhält einen eigenen annotierten Tag und einen eigenen organisationssignierten Release-Envelope.
+
 ## Freigabekette
 
 1. Vorgesehene Änderungen prüfen; Geheimnisse, lokale Pfade, private Schlüssel und temporäre Reports ausschließen.

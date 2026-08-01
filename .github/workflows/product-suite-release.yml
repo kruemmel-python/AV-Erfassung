@@ -1,0 +1,312 @@
+name: AV Product Suite 2.1.0 and AVM RC2 Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: av-product-suite-2.1.0-release
+  cancel-in-progress: false
+
+jobs:
+  official-product-release:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    environment: avm-release
+    env:
+      AVM_OFFICIAL_RELEASE: "true"
+      AVM_RELEASE_ENVIRONMENT: avm-release
+      AVM_RELEASE_APPROVED: ${{ secrets.AVM_RELEASE_APPROVED }}
+      AVM_CONFORMANCE_KEY_ID: avm-release-2026-01
+      AVM_BUILD_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+      AVM_ANDROID_KEY_ALIAS: avm-enterprise-capture
+      AVM_ANDROID_STORE_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
+      AVM_ANDROID_KEY_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
+      AV_ERFASSUNG_STORE_PASSWORD: ${{ secrets.AV_ERFASSUNG_STORE_PASSWORD }}
+      AV_KEYGEN_STORE_PASSWORD: ${{ secrets.AV_KEYGEN_STORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify immutable source and unused release tags
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") { throw "Official releases require main" }
+          $commit = (git rev-parse HEAD).Trim()
+          if ($commit -ne "${{ github.sha }}") { throw "Checkout does not match workflow commit" }
+          if (git status --porcelain) { throw "Checkout is dirty" }
+          foreach ($tag in @("v2.1.0", "avm-v1.0.0-rc2")) {
+            if (git tag --list $tag) { throw "Release tag already exists: $tag" }
+          }
+          "AVM_SOURCE_COMMIT=$commit" >> $env:GITHUB_ENV
+          "AVM_SOURCE_DIRTY=false" >> $env:GITHUB_ENV
+          "RELEASE_STAGING=$env:RUNNER_TEMP\av-product-suite-2.1.0" >> $env:GITHUB_ENV
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
+        with:
+          cache: false
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-qt5-base
+
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
+      - name: Install isolated Android SDK 37
+        shell: pwsh
+        run: |
+          $sdk = Join-Path $env:RUNNER_TEMP "android-sdk-37"
+          New-Item -ItemType Directory -Force -Path $sdk | Out-Null
+          Copy-Item -Recurse -Force (Join-Path $env:ANDROID_HOME "licenses") (Join-Path $sdk "licenses")
+          $archive = Join-Path $env:RUNNER_TEMP "commandlinetools-win-15859902_latest.zip"
+          Invoke-WebRequest "https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip" -OutFile $archive
+          $archiveHash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          if ($archiveHash -ne "90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a") { throw "Android command-line tools digest mismatch" }
+          $expanded = Join-Path $env:RUNNER_TEMP "android-commandline-tools"
+          Expand-Archive -LiteralPath $archive -DestinationPath $expanded
+          $commandLineTools = Join-Path $sdk "cmdline-tools\latest"
+          New-Item -ItemType Directory -Force -Path (Split-Path $commandLineTools) | Out-Null
+          Move-Item -LiteralPath (Join-Path $expanded "cmdline-tools") -Destination $commandLineTools
+          $androidCli = Join-Path $commandLineTools "bin\android.exe"
+          & $androidCli "--sdk=$sdk" sdk install --canary "platforms/android-37.0" "platform-tools" "build-tools/36.0.0"
+          if (-not (Test-Path (Join-Path $sdk "platforms\android-37.0\android.jar")) -or -not (Test-Path (Join-Path $sdk "build-tools\36.0.0\apksigner.bat"))) {
+            throw "Android SDK installation failed"
+          }
+          "ANDROID_HOME=$sdk" >> $env:GITHUB_ENV
+          "ANDROID_SDK_ROOT=$sdk" >> $env:GITHUB_ENV
+
+      - name: Materialize protected signing keys
+        shell: pwsh
+        run: |
+          $files = @(
+            @{ Path = (Join-Path $env:RUNNER_TEMP "avm-release-private.pem"); Value = "${{ secrets.AVM_RELEASE_PRIVATE_KEY_B64 }}" },
+            @{ Path = (Join-Path $env:RUNNER_TEMP "avm-release-public.pem"); Value = "${{ secrets.AVM_RELEASE_PUBLIC_KEY_B64 }}" },
+            @{ Path = (Join-Path $env:RUNNER_TEMP "avm-enterprise-capture.p12"); Value = "${{ secrets.AVM_ANDROID_KEYSTORE_B64 }}" },
+            @{ Path = (Join-Path $env:RUNNER_TEMP "av-erfassung.p12"); Value = "${{ secrets.AV_ERFASSUNG_KEYSTORE_B64 }}" },
+            @{ Path = (Join-Path $env:RUNNER_TEMP "teamleiter-keygenerator.p12"); Value = "${{ secrets.AV_KEYGEN_KEYSTORE_B64 }}" }
+          )
+          foreach ($file in $files) {
+            [IO.File]::WriteAllBytes($file.Path, [Convert]::FromBase64String($file.Value))
+          }
+          "AVM_CONFORMANCE_PRIVATE_KEY=$($files[0].Path)" >> $env:GITHUB_ENV
+          "AVM_CONFORMANCE_PUBLIC_KEY=$($files[1].Path)" >> $env:GITHUB_ENV
+          "AVM_ANDROID_KEYSTORE=$($files[2].Path)" >> $env:GITHUB_ENV
+          "AV_ERFASSUNG_KEYSTORE=$($files[3].Path)" >> $env:GITHUB_ENV
+          "AV_KEYGEN_KEYSTORE=$($files[4].Path)" >> $env:GITHUB_ENV
+
+      - name: Build and test production Android applications
+        shell: pwsh
+        run: |
+          .\gradlew.bat --no-daemon clean --warning-mode=fail
+          .\gradlew.bat --no-daemon :app:testDebugUnitTest :keygenerator:testDebugUnitTest :app:lintRelease :keygenerator:lintRelease :app:assembleRelease :keygenerator:assembleRelease --warning-mode=fail
+          if ($LASTEXITCODE -ne 0) { throw "Android product build failed" }
+
+      - name: Locate Qt toolchain
+        shell: pwsh
+        run: |
+          $candidate = Join-Path $env:RUNNER_TEMP "msys64\mingw64\bin\qmake.exe"
+          if (-not (Test-Path -LiteralPath $candidate)) {
+            $candidate = Get-ChildItem -Path $env:RUNNER_TEMP -Recurse -Filter qmake.exe | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $candidate) { throw "Qt qmake was not found" }
+          "AV_QT_BIN=$(Split-Path -Parent $candidate)" >> $env:GITHUB_ENV
+
+      - name: Build and test AV Schichtreport for Windows
+        shell: pwsh
+        run: |
+          .\DesktopReport\build-portable.ps1
+          if ($LASTEXITCODE -ne 0) { throw "AV-Schichtreport build failed" }
+
+      - name: Build official AVM RC2
+        shell: msys2 {0}
+        working-directory: AV_Modular
+        run: |
+          ./gradlew.bat --no-daemon clean --warning-mode=fail
+          ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=fail
+
+      - name: Verify versions, signatures and AVM evidence
+        shell: pwsh
+        run: |
+          $tools = Join-Path $env:ANDROID_HOME "build-tools\36.0.0"
+          $apkSigner = Join-Path $tools "apksigner.bat"
+          $aapt = Join-Path $tools "aapt2.exe"
+          $apks = @(
+            @{ Path = "app\build\outputs\apk\release\app-release.apk"; Package = "de.postkisten.tracker"; Version = "2.1.0"; Code = "12"; Cert = "17222a2b4bea97243191be2a02230acaf2701920a4f47f0bdff57ba439ae7fc5" },
+            @{ Path = "Keygenerator\build\outputs\apk\release\keygenerator-release.apk"; Package = "de.postkisten.keygenerator"; Version = "1.1.0"; Code = "2"; Cert = "1bc9ccd3f8cb1dc8534449f26bd37f45dff40e3e4f26b8bcb1d36c208307195f" },
+            @{ Path = "AV_Modular\enterprise\capture-android\build\outputs\apk\release\capture-android-release.apk"; Package = "de.av.modular.capture"; Version = "1.0.0-RC2"; Code = "10002"; Cert = "c7d0d4c2efe8aa0385e12326208df486abf5f19072aa0ec520d21be1966fc9a9" }
+          )
+          foreach ($apk in $apks) {
+            & $apkSigner verify --verbose $apk.Path
+            if ($LASTEXITCODE -ne 0) { throw "APK signature verification failed: $($apk.Path)" }
+            $certOutput = (& $apkSigner verify --print-certs $apk.Path) -join "`n"
+            if ($certOutput -notmatch "certificate SHA-256 digest: $($apk.Cert)") { throw "Unexpected APK certificate: $($apk.Path)" }
+            $badging = (& $aapt dump badging $apk.Path | Select-Object -First 1)
+            if ($badging -notmatch "name='$([regex]::Escape($apk.Package))'" -or $badging -notmatch "versionCode='$($apk.Code)'" -or $badging -notmatch "versionName='$([regex]::Escape($apk.Version))'") {
+              throw "Unexpected APK identity or version: $($apk.Path)"
+            }
+          }
+          $report = Get-Content -Raw AV_Modular\build\reports\avm-conformance.json | ConvertFrom-Json
+          $manifestPath = "AV_Modular\build\distributions\AVM-1.0.0-RC2-SHA256SUMS.json"
+          $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json
+          $envelopePath = "AV_Modular\build\distributions\AVM-1.0.0-RC2-RELEASE-ENVELOPE.json"
+          $envelope = Get-Content -Raw $envelopePath | ConvertFrom-Json
+          if (-not $report.official_release -or -not $manifest.official_release -or -not $envelope.official_release) { throw "AVM evidence is not official" }
+          if ($envelope.source.dirty -or $envelope.source.commit -ne "${{ github.sha }}") { throw "Invalid AVM source provenance" }
+          if ($report.signature.trust_status -ne "trusted-official-release") { throw "Invalid AVM trust status" }
+          if ($report.summary.passed -ne 37 -or $report.summary.failed -ne 0) { throw "AVM conformance is not 37/37" }
+          if ($manifest.artifacts.Count -ne 11) { throw "AVM artifact manifest is incomplete" }
+          $manifestHash = (Get-FileHash -Algorithm SHA256 $manifestPath).Hash.ToLowerInvariant()
+          $reportHash = (Get-FileHash -Algorithm SHA256 AV_Modular\build\reports\avm-conformance.json).Hash.ToLowerInvariant()
+          $sbomHash = (Get-FileHash -Algorithm SHA256 AV_Modular\build\distributions\AVM-1.0.0-RC2-SBOM.cdx.json).Hash.ToLowerInvariant()
+          if ($envelope.artifact_manifest_sha256 -ne $manifestHash -or $envelope.conformance_report_sha256 -ne $reportHash -or $envelope.sbom_sha256 -ne $sbomHash) {
+            throw "AVM release envelope binding failed"
+          }
+          $desktopArchive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "DesktopReport\dist\AV-Schichtreport-portable.zip"))
+          try {
+            $desktopEntries = @($desktopArchive.Entries.FullName)
+          } finally {
+            $desktopArchive.Dispose()
+          }
+          if (-not ($desktopEntries -match "AV-Schichtreport.exe$") -or -not ($desktopEntries -match "platforms/qwindows.dll$")) { throw "Portable Windows package is incomplete" }
+
+      - name: Assemble unified release directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:RELEASE_STAGING | Out-Null
+          $copies = @{
+            "app\build\outputs\apk\release\app-release.apk" = "AV-Erfassung-release.apk"
+            "Keygenerator\build\outputs\apk\release\keygenerator-release.apk" = "Teamleiter-Keygenerator-release.apk"
+            "DesktopReport\dist\AV-Schichtreport-portable.zip" = "AV-Schichtreport-portable.zip"
+            "Handbuch\Mitarbeiterhandbuch_AV-Erfassung.pdf" = "Mitarbeiterhandbuch_AV-Erfassung.pdf"
+            "Handbuch\Benutzerhandbuch_AV-Schichtreporter.pdf" = "Benutzerhandbuch_AV-Schichtreporter.pdf"
+            "release\signing-identities.json" = "AV-Product-Signing-Identities.json"
+            "AV_Modular\enterprise\capture-android\build\outputs\apk\release\capture-android-release.apk" = "AVM-Capture-1.0.0-RC2.apk"
+            "AV_Modular\build\distributions\AVM-Specification-1.0.0-RC2.zip" = "AVM-Specification-1.0.0-RC2.zip"
+            "AV_Modular\conformance\avm-conformance-cli\build\distributions\avm-conformance-1.0.0-RC2.zip" = "avm-conformance-1.0.0-RC2.zip"
+            "AV_Modular\conformance\avm-interoperability\build\distributions\avm-interoperability-1.0.0-RC2.zip" = "avm-interoperability-1.0.0-RC2.zip"
+            "AV_Modular\enterprise\demo-cli\build\distributions\demo-cli-1.0.0-RC2.zip" = "demo-cli-1.0.0-RC2.zip"
+            "AV_Modular\enterprise\reporter-cli\build\distributions\reporter-cli-1.0.0-RC2.zip" = "reporter-cli-1.0.0-RC2.zip"
+            "AV_Modular\enterprise\designer-desktop\build\distributions\designer-desktop-1.0.0-RC2.zip" = "designer-desktop-1.0.0-RC2.zip"
+            "AV_Modular\enterprise\profile-tool\build\distributions\profile-tool-1.0.0-RC2.zip" = "profile-tool-1.0.0-RC2.zip"
+            "AV_Modular\build\native-conformance-win\avm_canonical_golden.exe" = "avm_canonical_golden.exe"
+            "AV_Modular\build\native-host-win\av_module_host_test.exe" = "av_module_host_test.exe"
+            "AV_Modular\build\distributions\AVM-1.0.0-RC2-SHA256SUMS.json" = "AVM-1.0.0-RC2-SHA256SUMS.json"
+            "AV_Modular\build\distributions\AVM-1.0.0-RC2-SBOM.cdx.json" = "AVM-1.0.0-RC2-SBOM.cdx.json"
+            "AV_Modular\build\distributions\AVM-1.0.0-RC2-RELEASE-ENVELOPE.json" = "AVM-1.0.0-RC2-RELEASE-ENVELOPE.json"
+            "AV_Modular\build\reports\avm-conformance.json" = "avm-conformance-1.0.0-RC2.json"
+          }
+          foreach ($copy in $copies.GetEnumerator()) {
+            if (-not (Test-Path -LiteralPath $copy.Key)) { throw "Release artifact is missing: $($copy.Key)" }
+            Copy-Item -LiteralPath $copy.Key -Destination (Join-Path $env:RELEASE_STAGING $copy.Value)
+          }
+          $artifacts = Get-ChildItem -LiteralPath $env:RELEASE_STAGING -File | Sort-Object Name | ForEach-Object {
+            [ordered]@{ name = $_.Name; size = $_.Length; sha256 = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant() }
+          }
+          $metadata = [ordered]@{
+            contract = "av-product-suite-release-1.0"
+            release = "2.1.0"
+            generated_at_utc = [DateTime]::UtcNow.ToString("o")
+            source = [ordered]@{ commit = "${{ github.sha }}"; dirty = $false }
+            build = [ordered]@{ workflow = "${{ github.workflow }}"; run_id = "${{ github.run_id }}"; run_attempt = "${{ github.run_attempt }}" }
+            components = [ordered]@{
+              av_erfassung = "2.1.0"
+              teamleiter_keygenerator = "1.1.0"
+              av_schichtreport = "1.1.0"
+              av_modular = "1.0.0-RC2"
+            }
+            artifacts = @($artifacts)
+          }
+          $metadata | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $env:RELEASE_STAGING "AV-Product-Suite-2.1.0-RELEASE.json") -Encoding utf8NoBOM
+          Get-ChildItem -LiteralPath $env:RELEASE_STAGING -File | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant(), $_.Name
+          } | Set-Content -LiteralPath (Join-Path $env:RELEASE_STAGING "AV-Product-Suite-2.1.0-SHA256SUMS.txt") -Encoding utf8NoBOM
+
+      - name: Attest every published artifact
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+        with:
+          subject-path: ${{ env.RELEASE_STAGING }}/*
+
+      - name: Publish immutable AVM and product releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $avmManifest = Join-Path $env:RELEASE_STAGING "AVM-1.0.0-RC2-SHA256SUMS.json"
+          $avmReport = Join-Path $env:RELEASE_STAGING "avm-conformance-1.0.0-RC2.json"
+          $productManifest = Join-Path $env:RELEASE_STAGING "AV-Product-Suite-2.1.0-RELEASE.json"
+          $avmManifestHash = (Get-FileHash -Algorithm SHA256 $avmManifest).Hash.ToLowerInvariant()
+          $avmReportHash = (Get-FileHash -Algorithm SHA256 $avmReport).Hash.ToLowerInvariant()
+          $productManifestHash = (Get-FileHash -Algorithm SHA256 $productManifest).Hash.ToLowerInvariant()
+          git config user.name "AV Release Automation"
+          git config user.email "ralf.kruemmel@outlook.de"
+          git tag -a avm-v1.0.0-rc2 "${{ github.sha }}" -m "AVM 1.0.0-RC2`nCommit: ${{ github.sha }}`nConformance: 37/37`nManifest: $avmManifestHash`nReport: $avmReportHash`nKey: avm-release-2026-01`nCI: ${{ github.run_id }}"
+          git tag -a v2.1.0 "${{ github.sha }}" -m "AV Product Suite 2.1.0`nCommit: ${{ github.sha }}`nManifest: $productManifestHash`nAVM: 1.0.0-RC2`nCI: ${{ github.run_id }}"
+          git push origin avm-v1.0.0-rc2 v2.1.0
+          $avmNotes = @"
+          # AVM 1.0.0-RC2
+
+          Organisationssignierter Standard Candidate mit Supply-Chain-Härtung und getrenntem Interoperabilitäts-Gate.
+
+          - Commit: `${{ github.sha }}`
+          - Conformance: 37/37
+          - Artefakte im AVM-Manifest: 11/11
+          - Release-Key: `avm-release-2026-01`
+          - Manifest SHA-256: `$avmManifestHash`
+          - Report SHA-256: `$avmReportHash`
+          - CI-Lauf: `${{ github.run_id }}`
+
+          AVM Final bleibt bis zum echten externen Pilot- und Vier-Augen-Nachweis gesperrt.
+          "@
+          $avmNotesFile = Join-Path $env:RUNNER_TEMP "avm-rc2-notes.md"
+          Set-Content -LiteralPath $avmNotesFile -Value $avmNotes -Encoding utf8NoBOM
+          $avmAssets = Get-ChildItem -LiteralPath $env:RELEASE_STAGING -File | Where-Object {
+            $_.Name -like "AVM-*" -or $_.Name -like "avm-*" -or $_.Name -like "demo-cli-*" -or $_.Name -like "reporter-cli-*" -or $_.Name -like "designer-desktop-*" -or $_.Name -like "profile-tool-*" -or $_.Name -eq "av_module_host_test.exe"
+          } | Select-Object -ExpandProperty FullName
+          gh release create avm-v1.0.0-rc2 --verify-tag --prerelease --title "AVM 1.0.0-RC2" --notes-file $avmNotesFile $avmAssets
+          $productNotes = @"
+          # AV Product Suite 2.1.0
+
+          Vollständiger gemeinsamer Release aller Android- und Windows-Anwendungen sowie AV Modular 1.0.0-RC2.
+
+          ## Produktversionen
+          - AV-Erfassung 2.1.0 (`versionCode 12`)
+          - Teamleiter-Keygenerator 1.1.0 (`versionCode 2`)
+          - AV-Schichtreport 1.1.0
+          - AV Modular 1.0.0-RC2
+
+          Beide klassischen Android-Apps verwenden ab diesem Release getrennte Produktionssignaturen. Debug-signierte Pilotversionen müssen vor der Installation einmalig deinstalliert werden; benötigte Daten sind vorher zu exportieren.
+
+          - Commit: `${{ github.sha }}`
+          - Produktmanifest SHA-256: `$productManifestHash`
+          - AVM Conformance: 37/37
+          - CI-Lauf: `${{ github.run_id }}`
+          "@
+          $productNotesFile = Join-Path $env:RUNNER_TEMP "product-suite-notes.md"
+          Set-Content -LiteralPath $productNotesFile -Value $productNotes -Encoding utf8NoBOM
+          $allAssets = Get-ChildItem -LiteralPath $env:RELEASE_STAGING -File | Select-Object -ExpandProperty FullName
+          gh release create v2.1.0 --verify-tag --latest --title "AV Product Suite 2.1.0 – Komplettpaket" --notes-file $productNotesFile $allAssets
+
+      - name: Remove temporary signing material
+        if: always()
+        shell: pwsh
+        run: |
+          Remove-Item -Force -ErrorAction SilentlyContinue `
+            (Join-Path $env:RUNNER_TEMP "avm-release-private.pem"), `
+            (Join-Path $env:RUNNER_TEMP "avm-release-public.pem"), `
+            (Join-Path $env:RUNNER_TEMP "avm-enterprise-capture.p12"), `
+            (Join-Path $env:RUNNER_TEMP "av-erfassung.p12"), `
+            (Join-Path $env:RUNNER_TEMP "teamleiter-keygenerator.p12")

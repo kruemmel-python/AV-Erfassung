@@ -13,9 +13,9 @@ android {
         applicationId = "de.postkisten.tracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10
-        versionName = "2.0.2"
-        buildConfigField("String", "BUILD_ID", "\"20260717-01\"")
+        versionCode = 11
+        versionName = "2.0.3"
+        buildConfigField("String", "BUILD_ID", "\"20260801-01\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

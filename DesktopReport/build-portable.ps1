@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $qtBin = if ($env:AV_QT_BIN) { $env:AV_QT_BIN } else { 'C:\msys64\mingw64\bin' }
+$qmake = if ($env:AV_QMAKE) { $env:AV_QMAKE } else { Join-Path $qtBin 'qmake.exe' }
 $env:PATH = "$qtBin;$env:PATH"
 $build = Join-Path $root 'build'
 $testBuild = Join-Path $root 'build-tests'
@@ -18,8 +19,8 @@ function Remove-GeneratedDirectory([string] $path) {
     }
 }
 
-if (-not (Test-Path (Join-Path $qtBin 'qmake.exe'))) {
-    throw "Qt 5 wurde unter $qtBin nicht gefunden."
+if (-not (Test-Path -LiteralPath $qmake -PathType Leaf)) {
+    throw "Qt qmake wurde unter $qmake nicht gefunden."
 }
 
 Remove-GeneratedDirectory $build
@@ -29,7 +30,7 @@ Remove-GeneratedDirectory $distRoot
 New-Item -ItemType Directory -Force -Path $testBuild | Out-Null
 Push-Location $testBuild
 try {
-    & (Join-Path $qtBin 'qmake.exe') (Join-Path $root 'tests\import_test.pro') 'CONFIG+=release'
+    & $qmake (Join-Path $root 'tests\import_test.pro') 'CONFIG+=release'
     if ($LASTEXITCODE -ne 0) { throw 'qmake für Importtests fehlgeschlagen.' }
     & (Join-Path $qtBin 'mingw32-make.exe') -j2
     if ($LASTEXITCODE -ne 0) { throw 'Kompilierung der Importtests fehlgeschlagen.' }
@@ -49,7 +50,7 @@ try {
 New-Item -ItemType Directory -Force -Path $build | Out-Null
 Push-Location $build
 try {
-    & (Join-Path $qtBin 'qmake.exe') (Join-Path $root 'AV-Schichtreport.pro') 'CONFIG+=release'
+    & $qmake (Join-Path $root 'AV-Schichtreport.pro') 'CONFIG+=release'
     if ($LASTEXITCODE -ne 0) { throw 'qmake fehlgeschlagen.' }
     & (Join-Path $qtBin 'mingw32-make.exe') -j2
     if ($LASTEXITCODE -ne 0) { throw 'Kompilierung fehlgeschlagen.' }

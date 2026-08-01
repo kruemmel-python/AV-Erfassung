@@ -29,7 +29,7 @@ class Converters {
 
 @Database(
     entities = [BoxEntity::class, InterruptionEntity::class, ShiftEntity::class, WorkProcessEntity::class],
-    version = 5,
+    version = TrackerDatabase.DATABASE_VERSION,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -37,6 +37,9 @@ abstract class TrackerDatabase : RoomDatabase() {
     abstract fun trackerDao(): TrackerDao
 
     companion object {
+        const val DATABASE_VERSION = 5
+        const val DATA_SCHEMA_VERSION = 1
+
         @Volatile private var instance: TrackerDatabase? = null
         fun get(context: Context): TrackerDatabase = instance ?: synchronized(this) {
             createPreMigrationBackup(context.applicationContext)

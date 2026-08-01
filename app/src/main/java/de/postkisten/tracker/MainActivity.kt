@@ -2,9 +2,14 @@ package de.postkisten.tracker
 
 import android.Manifest
 import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -12,15 +17,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,6 +60,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
@@ -68,6 +81,7 @@ import de.postkisten.tracker.data.ShiftStatisticsService
 import de.postkisten.tracker.data.ShiftType
 import de.postkisten.tracker.data.ShiftExportType
 import de.postkisten.tracker.data.ShiftWithData
+import de.postkisten.tracker.data.TrackerDatabase
 import de.postkisten.tracker.data.WorkProcessEntity
 import de.postkisten.tracker.data.BoxStatus
 import de.postkisten.tracker.shift.ShiftWindow
@@ -147,7 +161,8 @@ private fun TrackerApp(vm: MainViewModel) {
                 active != null -> ActiveScreen(active!!, activeShift, clock, vm)
                 screen == Screen.HOME -> HomeScreen(vm)
                 screen == Screen.HISTORY -> HistoryScreen(vm)
-                else -> ShiftsScreen(vm)
+                screen == Screen.SHIFTS -> ShiftsScreen(vm)
+                else -> InfoScreen(vm)
             }
         }
     }
@@ -160,7 +175,6 @@ private fun HomeScreen(vm: MainViewModel) {
     var chooseType by remember { mutableStateOf(false) }
     var pendingType by remember { mutableStateOf<BoxType?>(null) }
     var pendingProcess by remember { mutableStateOf<ProcessType?>(null) }
-    var showInfo by remember { mutableStateOf(false) }
     Column(
         Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -193,7 +207,7 @@ private fun HomeScreen(vm: MainViewModel) {
             BigButton("VERLAUF", { vm.navigate(Screen.HISTORY) }, Modifier.weight(1f).height(62.dp), filled = false)
             BigButton("SCHICHTEN", { vm.navigate(Screen.SHIFTS) }, Modifier.weight(1f).height(62.dp), filled = false)
         }
-        TextButton(onClick = { showInfo = true }) { Text("INFO", color = Color.Black, fontWeight = FontWeight.Bold) }
+        TextButton(onClick = { vm.navigate(Screen.INFO) }) { Text("INFO", color = Color.Black, fontWeight = FontWeight.Bold) }
     }
     if (chooseType) TypeSelectionDialog(
         close = { chooseType = false },
@@ -213,7 +227,6 @@ private fun HomeScreen(vm: MainViewModel) {
             pendingProcess = null; vm.startShiftAndProcess(window.type, window.shiftDate, number, process)
         }
     }
-    if (showInfo) InfoDialog { showInfo = false }
 }
 
 @Composable
@@ -256,20 +269,179 @@ private fun ShiftSelectionDialog(
 }
 
 @Composable
-private fun InfoDialog(close: () -> Unit) = AlertDialog(
-    onDismissRequest = close,
-    title = { Text("AV-Erfassung", fontWeight = FontWeight.Black, color = DhlRed) },
-    text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Version 2.0.2", fontWeight = FontWeight.Bold)
-            HorizontalDivider()
-            Text("Developer", fontWeight = FontWeight.Bold)
-            Text("Ralf Krümmel")
-            Text("ralf.kruemmel@outlook.de")
+private fun InfoScreen(vm: MainViewModel) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val activeShift by vm.activeShift.collectAsState()
+    val storedShiftCount by vm.storedShiftCount.collectAsState()
+    val storedBoxCount by vm.storedBoxCount.collectAsState()
+    val lastExport by vm.lastSuccessfulExport.collectAsState()
+    var showDetails by remember { mutableStateOf(false) }
+    var copied by remember { mutableStateOf(false) }
+    val lastExportText = lastExport.takeIf { it > 0L }?.let(::infoTimestamp) ?: "Noch kein Export"
+    val diagnostics = remember(activeShift, storedShiftCount, storedBoxCount, lastExport) {
+        buildString {
+            appendLine("AV-Erfassung – Diagnosedaten")
+            appendLine("App-Version: ${BuildConfig.VERSION_NAME}")
+            appendLine("Build-Nummer: ${BuildConfig.VERSION_CODE} · ${BuildConfig.BUILD_ID}")
+            appendLine("Android-Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            appendLine("Datenbankversion: ${TrackerDatabase.DATABASE_VERSION}")
+            appendLine("Schema-Version: ${TrackerDatabase.DATA_SCHEMA_VERSION}")
+            appendLine("Zeitzone: Europe/Berlin")
+            appendLine("Aktive Schicht-ID: ${activeShift?.shift?.id ?: "Keine"}")
+            appendLine("Gespeicherte Schichten: $storedShiftCount")
+            appendLine("Gespeicherte Kisten: $storedBoxCount")
+            append("Letzter erfolgreicher Export: $lastExportText")
         }
-    },
-    confirmButton = { TextButton(onClick = close) { Text("SCHLIESSEN") } },
-)
+    }
+
+    BackHandler { vm.navigate(Screen.HOME) }
+    Column(Modifier.fillMaxSize()) {
+        AppBar("INFO") { vm.navigate(Screen.HOME) }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Column(
+                    Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher),
+                        contentDescription = "App-Symbol von AV-Erfassung",
+                        modifier = Modifier.size(76.dp),
+                    )
+                    Text("AV-ERFASSUNG", fontSize = 26.sp, fontWeight = FontWeight.Black, color = DhlRed)
+                    Text(
+                        "Version ${BuildConfig.VERSION_NAME} · Build ${BuildConfig.BUILD_ID}",
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        "Schichtbasierte Erfassung von\nKistenbearbeitung und Arbeitsprozessen",
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            item {
+                InfoSection("ENTWICKLER") {
+                    Text("Ralf Krümmel", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "✉ ralf.kruemmel@outlook.de",
+                        color = DhlRed,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { openSupportEmail(context, diagnostics) },
+                    )
+                }
+            }
+            item {
+                InfoSection("APP-INFORMATIONEN") {
+                    InfoRow("Datenbankversion", TrackerDatabase.DATABASE_VERSION.toString())
+                    InfoRow("Schema-Version", TrackerDatabase.DATA_SCHEMA_VERSION.toString())
+                    InfoRow("Zeitzone", "Europe/Berlin")
+                    InfoRow("Datenspeicherung", "Lokal auf diesem Gerät")
+                }
+            }
+            item {
+                InfoSection("FUNKTIONEN") {
+                    listOf(
+                        "Kistenbearbeitung",
+                        "Früh-, Spät- und Nachtschichten",
+                        "Registrierung und Kistenwechsel",
+                        "Schichtberichte",
+                        "CSV-Export",
+                    ).forEach { Text("• $it") }
+                }
+            }
+            item {
+                InfoSection("DATENSCHUTZ") {
+                    Text("Alle Arbeitsdaten werden lokal auf diesem Gerät gespeichert.")
+                    Text("Es erfolgt keine automatische Übertragung.")
+                }
+            }
+            item {
+                BigButton(
+                    "FEHLER MELDEN",
+                    { openSupportEmail(context, diagnostics) },
+                    Modifier.fillMaxWidth().height(58.dp),
+                )
+            }
+            item {
+                BigButton(
+                    if (showDetails) "TECHNISCHE DETAILS AUSBLENDEN" else "TECHNISCHE DETAILS",
+                    { showDetails = !showDetails; copied = false },
+                    Modifier.fillMaxWidth().height(58.dp),
+                    filled = false,
+                )
+            }
+            if (showDetails) item {
+                InfoSection("TECHNISCHE DETAILS") {
+                    InfoRow("App-Version", BuildConfig.VERSION_NAME)
+                    InfoRow("Build-Nummer", "${BuildConfig.VERSION_CODE} · ${BuildConfig.BUILD_ID}")
+                    InfoRow("Android-Version", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+                    InfoRow("Datenbankversion", TrackerDatabase.DATABASE_VERSION.toString())
+                    InfoRow("Schema-Version", TrackerDatabase.DATA_SCHEMA_VERSION.toString())
+                    InfoRow("Aktive Schicht-ID", activeShift?.shift?.id?.toString() ?: "Keine")
+                    InfoRow("Gespeicherte Schichten", storedShiftCount.toString())
+                    InfoRow("Gespeicherte Kisten", storedBoxCount.toString())
+                    InfoRow("Letzter Export", lastExportText)
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    Text("Die Diagnose enthält keine Personalnummern, Kisteninhalte oder Zeitbuchungen.", fontSize = 13.sp)
+                    BigButton(
+                        if (copied) "DIAGNOSEDATEN KOPIERT" else "DIAGNOSEDATEN KOPIEREN",
+                        {
+                            clipboard.setText(AnnotatedString(diagnostics))
+                            copied = true
+                        },
+                        Modifier.fillMaxWidth().height(54.dp),
+                        filled = false,
+                    )
+                }
+            }
+            item {
+                TextButton(
+                    onClick = { vm.navigate(Screen.HOME) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("SCHLIESSEN", fontWeight = FontWeight.Bold) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(title, color = DhlRed, fontWeight = FontWeight.Black, fontSize = 16.sp)
+            HorizontalDivider()
+            content()
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, modifier = Modifier.weight(1f))
+        Text(value, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+    }
+}
+
+private fun openSupportEmail(context: Context, diagnostics: String) {
+    val subject = Uri.encode("Fehlermeldung AV-Erfassung ${BuildConfig.VERSION_NAME} (${BuildConfig.BUILD_ID})")
+    val body = Uri.encode("Bitte beschreiben Sie den Fehler:\n\n\n--- Technische Diagnose (ohne Arbeits- und Personaldaten) ---\n$diagnostics")
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:ralf.kruemmel@outlook.de?subject=$subject&body=$body"))
+    runCatching { context.startActivity(intent) }.onFailure {
+        Toast.makeText(context, "Keine E-Mail-App verfügbar.", Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun infoTimestamp(value: Long): String = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
+    .withZone(ZoneId.of("Europe/Berlin"))
+    .format(value.asInstant())
 
 @Composable
 private fun ActiveScreen(item: BoxWithInterruptions, shift: ShiftWithData?, clock: ClockSnapshot, vm: MainViewModel) {
@@ -482,7 +654,10 @@ private fun ShiftsScreen(vm: MainViewModel) {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
             val csv = vm.shiftCsv(exportIds, ShiftExportType.BOTH)
-            vm.getApplication<Application>().contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { it.write(csv) }
+            vm.getApplication<Application>().contentResolver.openOutputStream(uri)?.let { output ->
+                output.bufferedWriter(Charsets.UTF_8).use { it.write(csv) }
+                vm.recordSuccessfulExport()
+            }
         }
     }
     Column(Modifier.fillMaxSize()) {
@@ -538,7 +713,10 @@ private fun ShiftReportScreen(item: ShiftWithData, vm: MainViewModel) {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
             val csv = vm.shiftCsv(setOf(item.shift.id), ShiftExportType.BOTH)
-            vm.getApplication<Application>().contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { it.write(csv) }
+            vm.getApplication<Application>().contentResolver.openOutputStream(uri)?.let { output ->
+                output.bufferedWriter(Charsets.UTF_8).use { it.write(csv) }
+                vm.recordSuccessfulExport()
+            }
         }
     }
     Column(Modifier.fillMaxSize()) {

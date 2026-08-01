@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TrackerDao {
+    @Query("SELECT COUNT(*) FROM shifts")
+    fun observeShiftCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM boxes")
+    fun observeBoxCount(): Flow<Int>
+
     @Insert suspend fun insertBox(box: BoxEntity): Long
     @Update suspend fun updateBox(box: BoxEntity)
     @Delete suspend fun deleteBox(box: BoxEntity)

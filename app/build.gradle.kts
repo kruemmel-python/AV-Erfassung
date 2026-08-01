@@ -13,12 +13,16 @@ android {
         applicationId = "de.postkisten.tracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10
-        versionName = "2.0.2"
+        versionCode = 11
+        versionName = "2.0.3"
+        buildConfigField("String", "BUILD_ID", "\"20260801-01\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 
     buildTypes {

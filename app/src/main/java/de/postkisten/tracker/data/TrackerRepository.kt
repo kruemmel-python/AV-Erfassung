@@ -13,6 +13,8 @@ class TrackerRepository(
     private val database: TrackerDatabase,
 ) {
     private val dao = database.trackerDao()
+    val shiftCount = dao.observeShiftCount()
+    val boxCount = dao.observeBoxCount()
     private val shiftResolver = ShiftResolver()
     private val legacyMigration = LegacyMigrationService(context, database, shiftResolver)
     val active: Flow<BoxWithInterruptions?> = dao.observeActive()

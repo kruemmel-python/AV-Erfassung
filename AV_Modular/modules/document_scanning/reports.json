@@ -1,0 +1,12 @@
+{
+  "reports": [
+    {
+      "report_id": "scan_quality", "title": "Scanqualität",
+      "dimensions": ["employee_id", "shift_date", "process_type"],
+      "metrics": [
+        { "id": "scan_jobs", "operation": "count" },
+        { "id": "average_duration", "operation": "average", "field": "net_duration_seconds" }
+      ]
+    }
+  ]
+}

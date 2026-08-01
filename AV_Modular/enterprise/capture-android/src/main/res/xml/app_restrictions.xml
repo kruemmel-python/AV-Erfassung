@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+    <restriction android:key="av_module_id" android:title="@string/restriction_module_id" android:restrictionType="string" android:defaultValue="mail_processing" />
+    <restriction android:key="av_profile_id" android:title="@string/restriction_profile_id" android:restrictionType="string" android:defaultValue="demo_dhl" />
+    <restriction android:key="av_location_id" android:title="@string/restriction_location_id" android:restrictionType="string" android:defaultValue="default" />
+    <restriction android:key="av_device_id" android:title="@string/restriction_device_id" android:restrictionType="string" android:defaultValue="unmanaged_device" />
+    <restriction android:key="av_allow_legacy_import" android:title="@string/restriction_legacy_import" android:restrictionType="bool" android:defaultValue="false" />
+</restrictions>

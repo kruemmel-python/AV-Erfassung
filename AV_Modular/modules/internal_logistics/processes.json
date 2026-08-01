@@ -1,0 +1,24 @@
+{
+  "interruption_types": [
+    { "id": "waiting_handover", "display_name": "Warten auf Übergabe", "productive": false },
+    { "id": "incident", "display_name": "Störung", "productive": false, "note_required": true }
+  ],
+  "shift_types": [
+    { "id": "day", "display_name": "Tagschicht", "start_local": "06:00", "end_local": "18:00" },
+    { "id": "night", "display_name": "Nachtschicht", "start_local": "18:00", "end_local": "06:00", "day_offset_end": 1 }
+  ],
+  "work_items": [
+    {
+      "id": "container_transport", "display_name": "Behältertransport", "target_duration_seconds": 900,
+      "requires_employee_id": true, "allowed_interruptions": ["waiting_handover", "incident"],
+      "fields": [
+        { "id": "avm.transport.container_id", "type": "text", "display_name": "Behälter-ID", "required": true, "max_length": 64 },
+        { "id": "avm.transport.pickup_location", "type": "text", "display_name": "Abholort", "required": true, "max_length": 80 },
+        { "id": "avm.transport.destination", "type": "text", "display_name": "Zielort", "required": true, "max_length": 80 },
+        { "id": "avm.transport.handover_status", "type": "text", "display_name": "Übergabestatus", "required": true, "max_length": 40 },
+        { "id": "avm.transport.delay_minutes", "type": "number", "display_name": "Verspätung Minuten" },
+        { "id": "avm.transport.loss_reported", "type": "boolean", "display_name": "Verlustmeldung" }
+      ]
+    }
+  ]
+}

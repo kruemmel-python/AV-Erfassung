@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kruemmel-python/AV-Erfassung/main/AV_Modular/specification/release-evidence-v1/conformance-report.schema.json",
+  "title": "AVM Conformance Report 1.0",
+  "type": "object",
+  "required": ["contract", "release", "official_release", "report_id", "generated_at_utc", "conformance_tool", "implementation", "certification_profile", "specification_contracts", "environment", "summary", "results", "evidence_digest", "signature"],
+  "properties": {
+    "contract": {"const": "avm-conformance-report-1.0"},
+    "release": {"type": "string", "minLength": 1},
+    "official_release": {"type": "boolean"},
+    "report_id": {"type": "string", "pattern": "^urn:uuid:"},
+    "generated_at_utc": {"type": "string", "format": "date-time"},
+    "artifact_manifest_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "sbom_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "conformance_tool": {"type": "object"},
+    "implementation": {"type": "object"},
+    "certification_profile": {"type": "string", "minLength": 1},
+    "specification_contracts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "environment": {"type": "object"},
+    "summary": {"type": "object"},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "subject", "subject_sha256", "status", "test_type", "expected_outcome", "observed_outcome"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "subject": {"type": "string", "minLength": 1, "pattern": "^[^:\\\\]+$"},
+          "subject_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "status": {"enum": ["PASS", "FAIL", "SKIP"]},
+          "test_type": {"enum": ["POSITIVE", "NEGATIVE"]},
+          "expected_outcome": {"enum": ["ACCEPT", "REJECT"]},
+          "observed_outcome": {"enum": ["ACCEPT", "REJECT"]}
+        }
+      }
+    },
+    "evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "signature": {"type": "object"}
+  }
+}

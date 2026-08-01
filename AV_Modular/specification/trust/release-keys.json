@@ -1,0 +1,24 @@
+{
+  "contract": "avm-release-key-registry-1.0",
+  "keys": [
+    {
+      "key_id": "avm-release-2026-01",
+      "algorithm": "Ed25519",
+      "purpose": ["conformance-report", "artifact-manifest", "release-envelope"],
+      "created_at": "2026-08-01T00:00:00Z",
+      "public_key_sha256": "8a1c3ac1c48d92891bcf1be00e37ea457f6374b6a9ca6f5071d5579f3cca7cb3",
+      "status": "ACTIVE",
+      "rotation_due": "2027-08-01T00:00:00Z",
+      "revocation_process": "enterprise/docs/INCIDENT-RESPONSE.md"
+    }
+  ],
+  "android_signing_certificates": [
+    {
+      "key_id": "avm-enterprise-capture-2026-01",
+      "algorithm": "RSA-4096/SHA384withRSA",
+      "certificate_sha256": "c7d0d4c2efe8aa0385e12326208df486abf5f19072aa0ec520d21be1966fc9a9",
+      "status": "ACTIVE",
+      "rotation_due": "2036-07-30T00:00:00Z"
+    }
+  ]
+}

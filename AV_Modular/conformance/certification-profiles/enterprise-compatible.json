@@ -1,0 +1,1 @@
+{"profile":"AVM Enterprise Compatible 1.0","required_contracts":["avm-core-model-1.0","avm-package-format-1.0","avm-work-record-2.0","avm-backup-format-1.0","avm-diagnostic-format-1.0"],"required_capabilities":["rbac","audit-chain","key-revocation","evidence-backup"]}

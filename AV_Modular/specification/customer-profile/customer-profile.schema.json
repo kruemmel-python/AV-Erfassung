@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://av.example/schema/customer-profile-v1.json",
+  "title": "AV Signed Customer Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile"],
+  "properties": {
+    "profile": {
+      "type": "object",
+      "required": ["profile_id", "environment", "tenant_id", "display_name", "timezone", "branding", "enabled_modules", "roles", "license"],
+      "properties": {
+        "profile_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
+        "environment": { "enum": ["development", "production"] },
+        "tenant_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "timezone": { "type": "string", "minLength": 1 },
+        "enabled_modules": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "required": ["algorithm", "key_id", "value_base64"],
+      "properties": {
+        "algorithm": { "const": "Ed25519" },
+        "key_id": { "type": "string", "minLength": 1 },
+        "value_base64": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">AV Capture</string>
+    <string name="restriction_module_id">Modul-ID</string>
+    <string name="restriction_profile_id">Profil-ID</string>
+    <string name="restriction_location_id">Standort-ID</string>
+    <string name="restriction_device_id">Geräte-ID</string>
+    <string name="restriction_legacy_import">Legacy-Import erlauben</string>
+</resources>

@@ -1,0 +1,9 @@
+{
+  "app.title": "AV Capture",
+  "module.title": "Postbearbeitung",
+  "action.start": "Vorgang starten",
+  "action.complete": "Vorgang beenden",
+  "field.employee_id": "Personalnummer",
+  "validation.employee_required": "Bitte eine numerische Personalnummer eingeben.",
+  "audit.deleted": "Gelöscht – bleibt für die Prüfspur erhalten"
+}

@@ -1,0 +1,23 @@
+{
+  "reports": [
+    {
+      "report_id": "shift_productivity",
+      "title": "Schichtproduktivität",
+      "dimensions": ["employee_id", "process_type", "shift_date"],
+      "metrics": [
+        { "id": "work_item_count", "operation": "count" },
+        { "id": "net_duration", "operation": "sum", "field": "net_duration_seconds" },
+        { "id": "average_duration", "operation": "average", "field": "net_duration_seconds" },
+        { "id": "target_ratio", "operation": "formula", "expression": "target_duration_seconds / net_duration_seconds" }
+      ]
+    },
+    {
+      "report_id": "correction_audit",
+      "title": "Änderungen und Löschungen",
+      "dimensions": ["employee_id", "shift_date", "correction_type"],
+      "metrics": [
+        { "id": "correction_count", "operation": "count" }
+      ]
+    }
+  ]
+}

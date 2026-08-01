@@ -1,0 +1,11 @@
+{
+  "module_id": "document_scanning",
+  "schema_version": 1,
+  "module_version": "1.0.0-RC1",
+  "display_name": "Dokumentenscanning",
+  "minimum_core_version": "1.0.0",
+  "processes_file": "processes.json",
+  "rules_file": "rules.json",
+  "reports_file": "reports.json",
+  "strings_file": "strings_de.json"
+}

@@ -1,0 +1,57 @@
+name: AVM RC1 Clean Conformance
+
+on:
+  push:
+    paths:
+      - "AV_Modular/**"
+      - ".github/workflows/avm-rc1-conformance.yml"
+  pull_request:
+    paths:
+      - "AV_Modular/**"
+      - ".github/workflows/avm-rc1-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: AV_Modular
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 36
+        shell: pwsh
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Clean RC1 build
+        shell: msys2 {0}
+        env:
+          AVM_BUILD_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          ./gradlew.bat --no-daemon clean --warning-mode=all
+          ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=all
+      - name: Upload signed evidence and release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: avm-1.0.0-rc1-${{ github.run_id }}
+          if-no-files-found: error
+          path: |
+            AV_Modular/build/distributions/**
+            AV_Modular/build/reports/avm-conformance.json
+            AV_Modular/enterprise/capture-android/build/outputs/apk/debug/*.apk

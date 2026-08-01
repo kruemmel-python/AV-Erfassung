@@ -1,0 +1,1 @@
+{"profile":"AVM Native Extension Compatible 1.0","required_contracts":["avm-native-plugin-abi-1","avm-package-format-1.0"],"required_capabilities":["abi-lifecycle","package-verification","bounded-memory-ownership"]}

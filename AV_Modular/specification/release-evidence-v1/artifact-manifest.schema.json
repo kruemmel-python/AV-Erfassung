@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kruemmel-python/AV-Erfassung/main/AV_Modular/specification/release-evidence-v1/artifact-manifest.schema.json",
+  "title": "AVM Artifact Manifest 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "release", "generated_at_utc", "official_release", "source", "sbom_sha256", "artifacts", "evidence_digest", "signature"],
+  "properties": {
+    "contract": {"const": "avm-artifact-manifest-1.0"},
+    "release": {"type": "string", "minLength": 1},
+    "generated_at_utc": {"type": "string", "format": "date-time"},
+    "official_release": {"type": "boolean"},
+    "source": {"$ref": "#/$defs/source"},
+    "sbom_sha256": {"$ref": "#/$defs/sha256"},
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1, "pattern": "^[^:\\\\]+$"},
+          "size": {"type": "integer", "minimum": 0},
+          "sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "evidence_digest": {"$ref": "#/$defs/sha256"},
+    "signature": {"$ref": "#/$defs/signature"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty"],
+      "properties": {"commit": {"type": "string", "minLength": 1}, "dirty": {"type": "boolean"}}
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "public_key_base64", "signer_type", "trust_status", "official_release", "value"],
+      "properties": {
+        "algorithm": {"const": "Ed25519"},
+        "key_id": {"type": "string", "minLength": 1},
+        "public_key_base64": {"type": "string", "minLength": 1},
+        "signer_type": {"enum": ["ephemeral-test-key", "organization-managed-release-key"]},
+        "trust_status": {"enum": ["untrusted-development-evidence", "externally-configured-development-evidence", "trusted-official-release"]},
+        "official_release": {"type": "boolean"},
+        "value": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

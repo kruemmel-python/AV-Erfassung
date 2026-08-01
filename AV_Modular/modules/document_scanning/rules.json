@@ -1,0 +1,9 @@
+{
+  "rules": [
+    {
+      "id": "scan_duration_anomaly", "event": "work_item.completed",
+      "conditions": [{ "fact": "duration_seconds", "operator": "greater_than_target_factor", "value": 1.5 }],
+      "actions": [{ "type": "create_qs_flag", "parameter": "SCAN_DURATION_ANOMALY" }]
+    }
+  ]
+}

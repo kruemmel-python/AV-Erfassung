@@ -1,0 +1,25 @@
+{
+  "rules": [
+    {
+      "id": "duration_anomaly",
+      "event": "work_item.completed",
+      "conditions": [
+        { "fact": "duration_seconds", "operator": "greater_than_target_factor", "value": 1.5 }
+      ],
+      "actions": [
+        { "type": "require_reason", "parameter": "TARGET_EXCEEDED" },
+        { "type": "create_qs_flag", "parameter": "DURATION_ANOMALY" }
+      ]
+    },
+    {
+      "id": "deleted_item_audit_warning",
+      "event": "work_item.deleted",
+      "conditions": [
+        { "fact": "correction_reason", "operator": "exists" }
+      ],
+      "actions": [
+        { "type": "create_warning", "parameter": "DELETED_ITEM_REMAINS_IN_AUDIT" }
+      ]
+    }
+  ]
+}

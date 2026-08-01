@@ -1,0 +1,1 @@
+{"profile":"AVM Reporter Compatible 1.0","required_contracts":["avm-work-record-2.0","avm-report-definition-1.0"],"required_capabilities":["revision-aware-import","conflict-rejection","soft-delete-audit"]}

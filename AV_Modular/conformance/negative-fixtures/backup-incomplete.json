@@ -1,0 +1,1 @@
+{"attack":"backup-required-file-missing","expected_error_code":"AVM-BKP-3004","missing":"data/audit_events.json"}

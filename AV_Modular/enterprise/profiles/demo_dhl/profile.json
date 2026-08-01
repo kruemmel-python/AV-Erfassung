@@ -1,0 +1,44 @@
+{
+  "profile": {
+    "profile_id": "demo_dhl",
+    "environment": "development",
+    "tenant_id": "tenant_demo",
+    "display_name": "Demo – Postbearbeitung",
+    "timezone": "Europe/Berlin",
+    "branding": {
+      "primary_color": "#D40511",
+      "secondary_color": "#FFCC00",
+      "organization_name": "AV Demo"
+    },
+    "enabled_modules": ["mail_processing", "document_scanning", "internal_logistics"],
+    "target_overrides": [
+      {
+        "module_id": "mail_processing",
+        "work_item_id": "routing",
+        "target_duration_seconds": 2100
+      }
+    ],
+    "roles": [
+      {
+        "id": "employee",
+        "display_name": "Mitarbeiter",
+        "permissions": ["shift.start", "work_item.capture", "shift.export"]
+      },
+      {
+        "id": "supervisor",
+        "display_name": "Teamleiter",
+        "permissions": ["work_item.correct", "work_item.delete", "audit.read", "report.generate"]
+      }
+    ],
+    "license": {
+      "license_id": "DEV-2026-0001",
+      "valid_until": "2099-12-31",
+        "modules": ["core", "mail_processing", "document_scanning", "internal_logistics", "quality_management", "advanced_reporting"],
+      "features": {
+        "custom_branding": true,
+        "multi_location_reports": false,
+        "erp_export": false
+      }
+    }
+  }
+}

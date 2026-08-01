@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.20)
+project(avm_contracts_cpp LANGUAGES CXX)
+
+if(MSVC)
+    add_compile_options(/W4 /WX /permissive-)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+endif()
+
+if(MINGW OR CMAKE_CXX_COMPILER MATCHES "mingw")
+    add_link_options(-static -static-libgcc -static-libstdc++)
+endif()
+
+enable_testing()
+add_executable(avm_canonical_golden canonical_golden.cpp)
+target_compile_features(avm_canonical_golden PRIVATE cxx_std_17)
+target_include_directories(avm_canonical_golden PRIVATE ../../specification/plugin-abi-v1)
+if(WIN32)
+    target_link_libraries(avm_canonical_golden PRIVATE bcrypt)
+endif()
+add_test(NAME avm_canonical_golden COMMAND avm_canonical_golden)

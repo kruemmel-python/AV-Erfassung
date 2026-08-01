@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kruemmel-python/AV-Erfassung/main/AV_Modular/specification/trust/release-key-registry.schema.json",
+  "title": "AVM Release Key Registry 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "keys", "android_signing_certificates"],
+  "properties": {
+    "contract": {"const": "avm-release-key-registry-1.0"},
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key_id", "algorithm", "purpose", "created_at", "public_key_sha256", "status", "rotation_due", "revocation_process"],
+        "properties": {
+          "key_id": {"type": "string", "pattern": "^[a-z0-9-]{8,64}$"},
+          "algorithm": {"const": "Ed25519"},
+          "purpose": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "created_at": {"type": "string", "format": "date-time"},
+          "public_key_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "status": {"enum": ["ACTIVE", "REVOKED", "RETIRED"]},
+          "rotation_due": {"type": "string", "format": "date-time"},
+          "revocation_process": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "android_signing_certificates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key_id", "algorithm", "certificate_sha256", "status", "rotation_due"],
+        "properties": {
+          "key_id": {"type": "string", "minLength": 1},
+          "algorithm": {"type": "string", "minLength": 1},
+          "certificate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "status": {"enum": ["ACTIVE", "REVOKED", "RETIRED"]},
+          "rotation_due": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

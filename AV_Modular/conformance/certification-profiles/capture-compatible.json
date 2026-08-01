@@ -1,0 +1,1 @@
+{"profile":"AVM Capture Compatible 1.0","required_contracts":["avm-module-format-1.0","avm-customer-profile-1.0","avm-package-format-1.0","avm-work-record-2.0"],"required_capabilities":["offline-capture","package-verification","work-record-export"]}

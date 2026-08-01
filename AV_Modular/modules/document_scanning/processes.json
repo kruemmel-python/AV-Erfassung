@@ -1,0 +1,24 @@
+{
+  "interruption_types": [
+    { "id": "device_fault", "display_name": "Gerätestörung", "productive": false, "note_required": true },
+    { "id": "quality_review", "display_name": "Qualitätsprüfung", "productive": true },
+    { "id": "other", "display_name": "Sonstiges", "productive": false, "note_required": true }
+  ],
+  "shift_types": [
+    { "id": "early", "display_name": "Frühschicht", "start_local": "06:00", "end_local": "14:00" },
+    { "id": "late", "display_name": "Spätschicht", "start_local": "14:00", "end_local": "22:00" }
+  ],
+  "work_items": [
+    {
+      "id": "scan_job", "display_name": "Scanauftrag", "target_duration_seconds": 1200,
+      "requires_employee_id": true, "allowed_interruptions": ["device_fault", "quality_review", "other"],
+      "fields": [
+        { "id": "avm.document.page_count", "type": "number", "display_name": "Seitenzahl", "required": true },
+        { "id": "avm.document.quality", "type": "text", "display_name": "Bildqualität", "required": true, "max_length": 40 },
+        { "id": "avm.document.rescan_required", "type": "boolean", "display_name": "Nachscan erforderlich" },
+        { "id": "avm.document.classification", "type": "text", "display_name": "Klassifikation", "required": true, "max_length": 80 },
+        { "id": "avm.document.approval_status", "type": "text", "display_name": "Freigabestatus", "required": true, "max_length": 40 }
+      ]
+    }
+  ]
+}

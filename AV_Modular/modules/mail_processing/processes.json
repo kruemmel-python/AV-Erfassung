@@ -1,0 +1,60 @@
+{
+  "interruption_types": [
+    { "id": "break", "display_name": "Pause", "productive": false },
+    { "id": "registration", "display_name": "Registrierung", "productive": true },
+    { "id": "imaging", "display_name": "Image", "productive": true },
+    { "id": "other", "display_name": "Diverse", "productive": true, "note_required": true }
+  ],
+  "shift_types": [
+    { "id": "early", "display_name": "Frühschicht", "start_local": "05:30", "end_local": "13:45" },
+    { "id": "late", "display_name": "Spätschicht", "start_local": "13:45", "end_local": "22:00" },
+    { "id": "night", "display_name": "Nachtschicht", "start_local": "22:00", "end_local": "05:30", "day_offset_end": 1 }
+  ],
+  "work_items": [
+    {
+      "id": "daily_mail",
+      "display_name": "Tagespost",
+      "target_duration_seconds": 1200,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "registration", "imaging", "other"]
+    },
+    {
+      "id": "casework",
+      "display_name": "Sachbearbeitung",
+      "target_duration_seconds": 1800,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "registration", "imaging", "other"]
+    },
+    {
+      "id": "returns",
+      "display_name": "Rückläufer",
+      "target_duration_seconds": 1500,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "other"]
+    },
+    {
+      "id": "routing",
+      "display_name": "Routing",
+      "target_duration_seconds": 1800,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "registration", "imaging", "other"]
+    },
+    {
+      "id": "filing",
+      "display_name": "Ablage",
+      "target_duration_seconds": 1500,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "registration", "other"]
+    },
+    {
+      "id": "hr_file",
+      "display_name": "HR-Akte",
+      "target_duration_seconds": 2100,
+      "requires_employee_id": true,
+      "allowed_interruptions": ["break", "registration", "imaging", "other"],
+      "fields": [
+        { "id": "document_group", "type": "text", "display_name": "Dokumentgruppe", "required": false, "max_length": 80 }
+      ]
+    }
+  ]
+}

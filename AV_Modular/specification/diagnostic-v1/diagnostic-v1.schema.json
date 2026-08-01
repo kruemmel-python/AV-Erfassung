@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://av-modular.local/schemas/av-support-diagnostic-v1.schema.json",
+  "title": "AV Support Diagnostic v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract", "generated_at_utc", "core_version", "module_id", "module_version",
+    "module_schema_version", "profile_id", "environment", "timezone",
+    "storage_schema_version", "counters"
+  ],
+  "properties": {
+    "contract": { "const": "av-support-diagnostic-v1" },
+    "generated_at_utc": { "type": "string", "format": "date-time" },
+    "core_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "module_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" },
+    "module_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "module_schema_version": { "type": "integer", "minimum": 1 },
+    "profile_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" },
+    "environment": { "enum": ["development", "production"] },
+    "timezone": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "storage_schema_version": { "type": "integer", "minimum": 1 },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shifts": { "type": "integer", "minimum": 0 },
+        "work_items": { "type": "integer", "minimum": 0 },
+        "activities": { "type": "integer", "minimum": 0 },
+        "corrections": { "type": "integer", "minimum": 0 },
+        "audit_events": { "type": "integer", "minimum": 0 },
+        "import_warnings": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

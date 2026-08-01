@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kruemmel-python/AV-Erfassung/main/AV_Modular/specification/release-evidence-v1/release-envelope.schema.json",
+  "title": "AVM Release Envelope 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "release", "official_release", "source", "build", "artifact_manifest_sha256", "conformance_report_sha256", "sbom_sha256", "evidence_digest", "signature"],
+  "properties": {
+    "contract": {"const": "avm-release-envelope-1.0"},
+    "release": {"type": "string", "minLength": 1},
+    "official_release": {"type": "boolean"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty"],
+      "properties": {"commit": {"type": "string", "minLength": 1}, "dirty": {"type": "boolean"}}
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow", "run_id", "result"],
+      "properties": {
+        "workflow": {"type": "string", "minLength": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "result": {"const": "PASS"}
+      }
+    },
+    "artifact_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "conformance_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sbom_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "signature": {"type": "object"}
+  }
+}

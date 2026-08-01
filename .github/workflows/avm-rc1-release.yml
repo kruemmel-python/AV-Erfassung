@@ -1,0 +1,168 @@
+name: AVM RC1 Official Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: avm-1.0.0-rc1-official-release
+  cancel-in-progress: false
+
+jobs:
+  official-release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    environment: avm-release
+    defaults:
+      run:
+        working-directory: AV_Modular
+    env:
+      AVM_OFFICIAL_RELEASE: "true"
+      AVM_RELEASE_ENVIRONMENT: avm-release
+      AVM_RELEASE_APPROVED: ${{ secrets.AVM_RELEASE_APPROVED }}
+      AVM_CONFORMANCE_KEY_ID: avm-release-2026-01
+      AVM_BUILD_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+      AVM_ANDROID_KEY_ALIAS: avm-enterprise-capture
+      AVM_ANDROID_STORE_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
+      AVM_ANDROID_KEY_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify immutable source
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") { throw "Official releases require main" }
+          if ((git rev-parse HEAD) -ne "${{ github.sha }}") { throw "Checkout does not match workflow commit" }
+          if (git status --porcelain) { throw "Checkout is dirty" }
+          if (git tag --list avm-v1.0.0-rc1) { throw "RC1 tag already exists" }
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36
+        shell: pwsh
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Materialize protected signing keys
+        shell: pwsh
+        run: |
+          $private = Join-Path $env:RUNNER_TEMP "avm-release-private.pem"
+          $public = Join-Path $env:RUNNER_TEMP "avm-release-public.pem"
+          $keystore = Join-Path $env:RUNNER_TEMP "avm-enterprise-capture.p12"
+          [IO.File]::WriteAllBytes($private, [Convert]::FromBase64String("${{ secrets.AVM_RELEASE_PRIVATE_KEY_B64 }}"))
+          [IO.File]::WriteAllBytes($public, [Convert]::FromBase64String("${{ secrets.AVM_RELEASE_PUBLIC_KEY_B64 }}"))
+          [IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String("${{ secrets.AVM_ANDROID_KEYSTORE_B64 }}"))
+          "AVM_CONFORMANCE_PRIVATE_KEY=$private" >> $env:GITHUB_ENV
+          "AVM_CONFORMANCE_PUBLIC_KEY=$public" >> $env:GITHUB_ENV
+          "AVM_ANDROID_KEYSTORE=$keystore" >> $env:GITHUB_ENV
+
+      - name: Clean official RC1 build
+        shell: msys2 {0}
+        run: |
+          ./gradlew.bat --no-daemon clean --warning-mode=all
+          ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=all
+
+      - name: Verify official evidence and Android signature
+        shell: pwsh
+        run: |
+          $report = Get-Content -Raw build/reports/avm-conformance.json | ConvertFrom-Json
+          $manifestPath = "build/distributions/AVM-1.0.0-RC1-SHA256SUMS.json"
+          $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json
+          $envelopePath = "build/distributions/AVM-1.0.0-RC1-RELEASE-ENVELOPE.json"
+          $envelope = Get-Content -Raw $envelopePath | ConvertFrom-Json
+          if (-not $report.official_release -or -not $envelope.official_release) { throw "Evidence is not official" }
+          if ($envelope.source.dirty -or $envelope.source.commit -ne "${{ github.sha }}") { throw "Invalid source provenance" }
+          if ($report.signature.trust_status -ne "trusted-official-release") { throw "Invalid trust status" }
+          if ($report.summary.passed -ne 37 -or $report.summary.failed -ne 0) { throw "Conformance result is not 37/37" }
+          if ($manifest.artifacts.Count -ne 9) { throw "Artifact manifest is incomplete" }
+          $manifestHash = (Get-FileHash -Algorithm SHA256 $manifestPath).Hash.ToLowerInvariant()
+          $reportHash = (Get-FileHash -Algorithm SHA256 build/reports/avm-conformance.json).Hash.ToLowerInvariant()
+          if ($envelope.artifact_manifest_sha256 -ne $manifestHash) { throw "Manifest binding failed" }
+          if ($envelope.conformance_report_sha256 -ne $reportHash) { throw "Report binding failed" }
+          $apk = "enterprise/capture-android/build/outputs/apk/release/capture-android-release.apk"
+          & "$env:ANDROID_HOME/build-tools/36.0.0/apksigner.bat" verify --verbose --print-certs $apk
+          if ($LASTEXITCODE -ne 0) { throw "APK signature verification failed" }
+
+      - name: Attest release provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            AV_Modular/build/distributions/*
+            AV_Modular/build/reports/avm-conformance.json
+            AV_Modular/enterprise/capture-android/build/outputs/apk/release/capture-android-release.apk
+            AV_Modular/conformance/avm-conformance-cli/build/distributions/*.zip
+            AV_Modular/enterprise/reporter-cli/build/distributions/*.zip
+            AV_Modular/enterprise/designer-desktop/build/distributions/*.zip
+            AV_Modular/enterprise/profile-tool/build/distributions/*.zip
+            AV_Modular/build/native-conformance-win/avm_canonical_golden.exe
+            AV_Modular/build/native-host-win/av_module_host_test.exe
+
+      - name: Publish immutable tag and GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $manifestHash = (Get-FileHash -Algorithm SHA256 build/distributions/AVM-1.0.0-RC1-SHA256SUMS.json).Hash.ToLowerInvariant()
+          $reportHash = (Get-FileHash -Algorithm SHA256 build/reports/avm-conformance.json).Hash.ToLowerInvariant()
+          $message = "AVM 1.0.0-RC1`nCommit: ${{ github.sha }}`nProfile: avm-enterprise-compatible-1.0`nConformance: 37/37`nManifest: $manifestHash`nReport: $reportHash`nKey: avm-release-2026-01`nCI: ${{ github.run_id }}"
+          git config user.name "AVM Release Automation"
+          git config user.email "ralf.kruemmel@outlook.de"
+          git tag -a avm-v1.0.0-rc1 "${{ github.sha }}" -m $message
+          git push origin avm-v1.0.0-rc1
+          $notes = @"
+          # AVM 1.0.0-RC1
+
+          Offizieller Standard Candidate mit organisationssignierter Conformance-Evidence.
+
+          - Commit: `${{ github.sha }}`
+          - Conformance: 37/37
+          - Negativtests: 8/8
+          - Release-Key: `avm-release-2026-01`
+          - Manifest SHA-256: `$manifestHash`
+          - Report SHA-256: `$reportHash`
+          - CI-Lauf: `${{ github.run_id }}`
+          "@
+          $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          Set-Content -LiteralPath $notesFile -Value $notes
+          gh release create avm-v1.0.0-rc1 --verify-tag --title "AVM 1.0.0-RC1" --notes-file $notesFile `
+            build/distributions/AVM-Specification-1.0.0-RC1.zip `
+            conformance/avm-conformance-cli/build/distributions/avm-conformance-1.0.0-RC1.zip `
+            enterprise/capture-android/build/outputs/apk/release/capture-android-release.apk `
+            enterprise/reporter-cli/build/distributions/reporter-cli-1.0.0-RC1.zip `
+            enterprise/designer-desktop/build/distributions/designer-desktop-1.0.0-RC1.zip `
+            enterprise/profile-tool/build/distributions/profile-tool-1.0.0-RC1.zip `
+            build/native-conformance-win/avm_canonical_golden.exe `
+            build/native-host-win/av_module_host_test.exe `
+            build/distributions/AVM-1.0.0-RC1-SHA256SUMS.json `
+            build/distributions/AVM-1.0.0-RC1-SBOM.cdx.json `
+            build/distributions/AVM-1.0.0-RC1-RELEASE-ENVELOPE.json `
+            build/reports/avm-conformance.json
+
+      - name: Remove temporary signing material
+        if: always()
+        shell: pwsh
+        run: |
+          Remove-Item -Force -ErrorAction SilentlyContinue `
+            (Join-Path $env:RUNNER_TEMP "avm-release-private.pem"), `
+            (Join-Path $env:RUNNER_TEMP "avm-release-public.pem"), `
+            (Join-Path $env:RUNNER_TEMP "avm-enterprise-capture.p12")

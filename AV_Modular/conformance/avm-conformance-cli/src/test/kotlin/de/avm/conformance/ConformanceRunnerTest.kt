@@ -23,10 +23,15 @@ class ConformanceRunnerTest {
         val root = Path.of(requireNotNull(System.getProperty("avm.root")))
         val report = ConformanceEvidence.create(root, ConformanceRunner(root).run("all"))
         assertTrue(ConformanceEvidence.verify(report))
-        assertEquals("ephemeral-test-key", report.signature.signerType)
-        assertEquals("untrusted-development-evidence", report.signature.trustStatus)
-        assertFalse(report.officialRelease)
-        assertFalse(report.signature.officialRelease)
+        if (report.officialRelease) {
+            assertEquals("organization-managed-release-key", report.signature.signerType)
+            assertEquals("trusted-official-release", report.signature.trustStatus)
+            assertTrue(report.signature.officialRelease)
+        } else {
+            assertEquals("ephemeral-test-key", report.signature.signerType)
+            assertEquals("untrusted-development-evidence", report.signature.trustStatus)
+            assertFalse(report.signature.officialRelease)
+        }
         assertTrue(report.implementation.commit.matches(Regex("[0-9a-f]{40}")))
         val first = report.results.first()
         val tamperedResults = listOf(first.copy(detail = "tampered")) + report.results.drop(1)

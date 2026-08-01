@@ -28,3 +28,12 @@ Seit dem Feature Freeze sind keine neuen Produktfunktionen zulässig. Korrekture
 - Kompatibilität: Ausschließlich Releaseprovenienz; Produkt-, Fach- und Nutzdaten bleiben unverändert.
 - Teständerung: Der Workflow verifiziert Commit und Arbeitsbaum vor dem Build, übergibt eine an `GITHUB_SHA` gebundene Quellassertion und die Evidence-Engine lehnt abweichende oder außerhalb GitHub Actions gesetzte Assertionen ab.
 - Commit: Bestandteil des kontrollierten RC1-Fix-Commits.
+
+## RC1-FIX-004 – Vertrauenskontextabhängiger Evidence-Test
+
+- Problem: Der Signaturtest erwartete unabhängig vom aktiven Vertrauenskontext ausschließlich die Metadaten einer ephemeren Entwicklungssignatur.
+- Auswirkung: Eine korrekt organisationssignierte offizielle Evidence wurde im Testlauf abgelehnt, obwohl Signatur, Vertrauensanker und Release-Guards gültig waren.
+- Verträge: Conformance Report 1.0 und Release-Trust-Modell; das normative Verhalten bleibt unverändert.
+- Kompatibilität: Ausschließlich Testkorrektur; Produkt-, Fach-, Signatur- und Nutzdaten bleiben unverändert.
+- Teständerung: Der Test prüft Entwicklungsevidence strikt auf `ephemeral-test-key` und offizielle Evidence strikt auf `organization-managed-release-key` sowie `trusted-official-release`.
+- Commit: Bestandteil des kontrollierten RC1-Fix-Commits.

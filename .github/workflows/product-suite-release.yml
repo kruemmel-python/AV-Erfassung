@@ -128,6 +128,7 @@ jobs:
             $candidate = Get-ChildItem -LiteralPath $qtBin -Filter "qmake*.exe" | Select-Object -First 1 -ExpandProperty FullName
           }
           if (-not $candidate) { throw "Qt qmake was not found" }
+          "AV_QMAKE=$candidate" >> $env:GITHUB_ENV
           "AV_QT_BIN=$(Split-Path -Parent $candidate)" >> $env:GITHUB_ENV
 
       - name: Build and test AV Schichtreport for Windows

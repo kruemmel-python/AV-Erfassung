@@ -64,6 +64,7 @@ jobs:
         run: |
           $sdk = Join-Path $env:RUNNER_TEMP "android-sdk-36"
           New-Item -ItemType Directory -Force -Path $sdk | Out-Null
+          Copy-Item -Recurse -Force (Join-Path $env:ANDROID_HOME "licenses") (Join-Path $sdk "licenses")
           sdkmanager "--sdk_root=$sdk" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           if ($LASTEXITCODE -ne 0) { throw "Android SDK installation failed" }
           "ANDROID_HOME=$sdk" >> $env:GITHUB_ENV

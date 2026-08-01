@@ -10,6 +10,7 @@ plugins {
 android {
     namespace = "de.av.modular.capture"
     compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "de.av.modular.capture"

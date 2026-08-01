@@ -27,6 +27,7 @@ class ConformanceRunnerTest {
         assertEquals("untrusted-development-evidence", report.signature.trustStatus)
         assertFalse(report.officialRelease)
         assertFalse(report.signature.officialRelease)
+        assertTrue(report.implementation.commit.matches(Regex("[0-9a-f]{40}")))
         val first = report.results.first()
         val tamperedResults = listOf(first.copy(detail = "tampered")) + report.results.drop(1)
         assertFalse(ConformanceEvidence.verify(report.copy(results = tamperedResults)))

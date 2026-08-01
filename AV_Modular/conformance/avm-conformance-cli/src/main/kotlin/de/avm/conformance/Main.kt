@@ -475,10 +475,10 @@ object ConformanceEvidence {
     }
 
     private fun implementation(root: Path, now: String): ImplementationIdentity {
-        val commit = process(root, listOf("git", "rev-parse", "HEAD")).ifBlank { "unavailable" }
-        val state = if (process(root, listOf("git", "status", "--porcelain")).isBlank()) "clean" else "dirty"
+        val source = sourceControlIdentity(root)
+        val state = if (source.dirty) "dirty" else "clean"
         val buildId = System.getenv("AVM_BUILD_ID") ?: System.getenv("GITHUB_RUN_ID")?.let { "github-$it" } ?: "local-${now.replace(Regex("[^0-9]"), "")}"
-        return ImplementationIdentity("AVM Enterprise", VERSION, commit, buildId, state)
+        return ImplementationIdentity("AVM Enterprise", VERSION, source.commit, buildId, state)
     }
 
     fun signingIdentity(root: Path): SigningIdentity {
@@ -496,12 +496,12 @@ object ConformanceEvidence {
         val keyId = System.getenv("AVM_CONFORMANCE_KEY_ID") ?: "sha256-${sha256(pair.public.encoded).take(24)}"
         val official = System.getenv("AVM_OFFICIAL_RELEASE").equals("true", ignoreCase = true)
         if (official) {
-            require(process(root, listOf("git", "status", "--porcelain")).isBlank()) { "Offizielle Evidence erfordert einen sauberen Arbeitsbaum" }
             require(System.getenv("GITHUB_ACTIONS") == "true") { "Offizielle Evidence erfordert GitHub Actions" }
             require(System.getenv("GITHUB_REPOSITORY") == "kruemmel-python/AV-Erfassung") { "Unerwartetes Release-Repository" }
             require(System.getenv("GITHUB_REF") == "refs/heads/main") { "Offizielle Evidence darf nur aus main entstehen" }
-            val commit = process(root, listOf("git", "rev-parse", "HEAD"))
-            require(System.getenv("GITHUB_SHA") == commit) { "Runner-Commit und Checkout stimmen nicht überein" }
+            val source = sourceControlIdentity(root)
+            require(!source.dirty) { "Offizielle Evidence erfordert einen sauberen Arbeitsbaum" }
+            require(System.getenv("GITHUB_SHA") == source.commit) { "Geprüfte Quellassertion und Runner-Commit stimmen nicht überein" }
             val workflowRef = System.getenv("GITHUB_WORKFLOW_REF").orEmpty()
             require(workflowRef.contains("/.github/workflows/avm-rc1-release.yml@refs/heads/main")) {
                 "Offizielle Evidence erfordert den freigegebenen RC1-Releaseworkflow aus main"
@@ -538,6 +538,26 @@ data class SigningIdentity(
     val trustStatus: String,
     val officialRelease: Boolean,
 )
+
+data class SourceControlIdentity(val commit: String, val dirty: Boolean)
+
+fun sourceControlIdentity(root: Path): SourceControlIdentity {
+    val assertedCommit = System.getenv("AVM_SOURCE_COMMIT")
+    val assertedDirty = System.getenv("AVM_SOURCE_DIRTY")
+    if (assertedCommit != null || assertedDirty != null) {
+        require(System.getenv("GITHUB_ACTIONS") == "true") { "Quellassertionen sind ausschließlich in GitHub Actions zulässig" }
+        require(assertedCommit?.matches(Regex("[0-9a-f]{40}")) == true) { "Ungültige Quell-Commit-Assertion" }
+        val dirty = when (assertedDirty) {
+            "true" -> true
+            "false" -> false
+            else -> error("Ungültige Arbeitsbaum-Assertion")
+        }
+        require(assertedCommit == System.getenv("GITHUB_SHA")) { "Quell-Commit-Assertion entspricht nicht GITHUB_SHA" }
+        return SourceControlIdentity(assertedCommit, dirty)
+    }
+    val commit = process(root, listOf("git", "rev-parse", "HEAD")).ifBlank { "unavailable" }
+    return SourceControlIdentity(commit, process(root, listOf("git", "status", "--porcelain")).isNotBlank())
+}
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "release-evidence") {

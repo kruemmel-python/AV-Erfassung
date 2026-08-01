@@ -52,6 +52,8 @@ Voraussetzungen sind JDK 17, Android SDK 36, CMake und MSYS2/MinGW-w64. Warnungs
 
 Der Gate validiert Spezifikationsartefakte, alle drei Referenzmodule, Work-Record-Golden-Daten, Diagnose- und Kompatibilitätsverträge, JVM-Tests, Android Lint sowie die unabhängige C++-Implementierung. Der maschinenlesbare Bericht unter `build/reports/avm-conformance.json` besitzt eindeutige Test-IDs, repository-relative Subjects mit SHA-256, erwartete und beobachtete Negativtest-Fehlercodes, Build- und Toolchainmetadaten sowie eine Ed25519-Signatur.
 
+Der separate Task `avmInteroperability` vergleicht Kotlin und C++ über eine vollständige, maschinenlesbare Ergebnismatrix, ohne den eingefrorenen 37-Test-Vertrag von RC1 zu verändern. Das strengere Kommando `final-readiness` verlangt echte Evidence von mindestens zwei Organisationen und zwei unabhängigen Freigabeidentitäten. Details stehen im [AVM Interoperability & Pilot Program](pilot/README.md).
+
 Der vollständige RC1-Build erzeugt zusätzlich reproduzierbar sortierte Distributionen und ein SHA-256-Artefaktmanifest:
 
 ```powershell
@@ -111,3 +113,4 @@ Die offizielle Freigabe läuft ausschließlich über `.github/workflows/avm-rc1-
 - [CSV-Vertrag](enterprise/docs/CSV-CONTRACT.md)
 - [RC1-Releasezeremonie](enterprise/docs/RELEASE-CEREMONY.md)
 - [RC-Fix-Register](specification/RC-FIXES.md)
+- [Interoperability & Pilot Program](pilot/README.md)

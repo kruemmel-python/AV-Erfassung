@@ -30,7 +30,7 @@ jobs:
       AVM_ANDROID_STORE_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
       AVM_ANDROID_KEY_PASSWORD: ${{ secrets.AVM_ANDROID_STORE_PASSWORD }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: main
           fetch-depth: 0
@@ -45,13 +45,13 @@ jobs:
           "AVM_SOURCE_COMMIT=${{ github.sha }}" >> $env:GITHUB_ENV
           "AVM_SOURCE_DIRTY=false" >> $env:GITHUB_ENV
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
 
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           cache: false
           msystem: MINGW64
@@ -60,7 +60,7 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
 
-      - uses: android-actions/setup-android@v4
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
 
       - name: Install isolated Android SDK 36
         shell: pwsh
@@ -114,7 +114,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "APK signature verification failed" }
 
       - name: Attest release provenance
-        uses: actions/attest@v4
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
         with:
           subject-path: |
             AV_Modular/build/distributions/*
@@ -154,7 +154,7 @@ jobs:
           "@
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -LiteralPath $notesFile -Value $notes
-          gh release create avm-v1.0.0-rc1 --verify-tag --title "AVM 1.0.0-RC1" --notes-file $notesFile `
+          gh release create avm-v1.0.0-rc1 --verify-tag --prerelease --title "AVM 1.0.0-RC1" --notes-file $notesFile `
             build/distributions/AVM-Specification-1.0.0-RC1.zip `
             conformance/avm-conformance-cli/build/distributions/avm-conformance-1.0.0-RC1.zip `
             enterprise/capture-android/build/outputs/apk/release/capture-android-release.apk `

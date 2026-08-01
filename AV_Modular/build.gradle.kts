@@ -31,6 +31,38 @@ val nativeConformance by tasks.registering(Exec::class) {
     commandLine("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "conformance/run-native-conformance.ps1")
 }
 
+val verifyPinnedActions by tasks.registering {
+    group = "verification"
+    description = "Rejects mutable GitHub Action references in every repository workflow."
+    val workflowDirectory = rootProject.projectDir.parentFile.resolve(".github/workflows")
+    inputs.files(fileTree(workflowDirectory) { include("*.yml", "*.yaml") })
+    doLast {
+        val actionReference = Regex("""^\s*(?:-\s*)?uses:\s*([^\s#]+)""")
+        val immutableReference = Regex("""^[^/\s]+/[^@\s]+@[0-9a-f]{40}$""")
+        val violations = workflowDirectory.walkTopDown()
+            .filter { it.isFile && it.extension in setOf("yml", "yaml") }
+            .flatMap { workflow ->
+                workflow.readLines().mapIndexedNotNull { index, line ->
+                    val reference = actionReference.find(line)?.groupValues?.get(1) ?: return@mapIndexedNotNull null
+                    if (reference.startsWith("./") || immutableReference.matches(reference)) null
+                    else "${workflow.relativeTo(rootProject.projectDir.parentFile).invariantSeparatorsPath}:${index + 1}: $reference"
+                }
+            }
+            .toList()
+        check(violations.isEmpty()) {
+            "GitHub Actions MUST use full immutable commit SHAs:\n${violations.joinToString("\n")}"
+        }
+    }
+}
+
+val avmInteroperability by tasks.registering {
+    group = "verification"
+    description = "Verifies the cross-language AVM interoperability baseline without changing RC1 conformance semantics."
+    dependsOn(verifyPinnedActions)
+    dependsOn(":avm-interoperability:test")
+    dependsOn(":avm-interoperability:run")
+}
+
 val avmSpecificationArchive by tasks.registering(Zip::class) {
     group = "distribution"
     description = "Creates the frozen AVM Specification 1.0.0-RC1 archive."
@@ -53,12 +85,14 @@ tasks.register("avmConformance") {
     dependsOn(":designer-desktop:test")
     dependsOn(":capture-android:lintDebug")
     dependsOn(nativeConformance)
+    dependsOn(verifyPinnedActions)
 }
 
 tasks.register("avmReleaseCandidate") {
     group = "distribution"
     description = "Builds AVM 1.0.0-RC1 and creates signed manifest, report, SBOM and release envelope."
     dependsOn(":avm-conformance:releaseEvidence")
+    dependsOn(avmInteroperability)
 }
 
 allprojects {

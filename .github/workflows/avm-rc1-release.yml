@@ -42,6 +42,8 @@ jobs:
           if ((git rev-parse HEAD) -ne "${{ github.sha }}") { throw "Checkout does not match workflow commit" }
           if (git status --porcelain) { throw "Checkout is dirty" }
           if (git tag --list avm-v1.0.0-rc1) { throw "RC1 tag already exists" }
+          "AVM_SOURCE_COMMIT=${{ github.sha }}" >> $env:GITHUB_ENV
+          "AVM_SOURCE_DIRTY=false" >> $env:GITHUB_ENV
 
       - uses: actions/setup-java@v5
         with:
@@ -51,6 +53,7 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
+          cache: false
           msystem: MINGW64
           update: true
           install: >-

@@ -180,8 +180,8 @@ object ReleaseEvidence {
     )
 
     private fun source(root: Path): ReleaseSource {
-        val commit = runProcess(root, listOf("git", "rev-parse", "HEAD")).ifBlank { "unavailable" }
-        return ReleaseSource(commit, runProcess(root, listOf("git", "status", "--porcelain")).isNotBlank())
+        val source = sourceControlIdentity(root)
+        return ReleaseSource(source.commit, source.dirty)
     }
 
     private fun build(): ReleaseBuild = ReleaseBuild(
@@ -220,12 +220,6 @@ object ReleaseEvidence {
 
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 }
-
-private fun runProcess(root: Path, command: List<String>): String = runCatching {
-    val process = ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
-    if (process.waitFor() == 0) output else ""
-}.getOrDefault("")
 
 private const val RC_VERSION = "1.0.0-RC1"
 private val RELEASE_JSON = Json { encodeDefaults = true; explicitNulls = true }

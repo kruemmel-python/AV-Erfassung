@@ -23,6 +23,14 @@ jobs:
         working-directory: AV_Modular
     steps:
       - uses: actions/checkout@v6
+      - name: Bind immutable source identity
+        shell: pwsh
+        run: |
+          $commit = (git rev-parse HEAD).Trim()
+          if ($commit -ne "${{ github.sha }}") { throw "Checkout does not match workflow commit" }
+          if (git status --porcelain) { throw "Checkout is dirty" }
+          "AVM_SOURCE_COMMIT=$commit" >> $env:GITHUB_ENV
+          "AVM_SOURCE_DIRTY=false" >> $env:GITHUB_ENV
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -30,6 +38,7 @@ jobs:
           cache: gradle
       - uses: msys2/setup-msys2@v2
         with:
+          cache: false
           msystem: MINGW64
           update: true
           install: >-

@@ -37,3 +37,30 @@ Seit dem Feature Freeze sind keine neuen Produktfunktionen zulässig. Korrekture
 - Kompatibilität: Ausschließlich Testkorrektur; Produkt-, Fach-, Signatur- und Nutzdaten bleiben unverändert.
 - Teständerung: Der Test prüft Entwicklungsevidence strikt auf `ephemeral-test-key` und offizielle Evidence strikt auf `organization-managed-release-key` sowie `trusted-official-release`.
 - Commit: Bestandteil des kontrollierten RC1-Fix-Commits.
+
+## RC1-FIX-005 – Unveränderliche GitHub-Action-Referenzen
+
+- Problem: Die CI- und Releaseworkflows verwendeten bewegliche Major-Tags für externe GitHub Actions.
+- Auswirkung: Ein später veränderter Tag hätte ohne Repositoryänderung anderen Drittcode in die Lieferkette aufnehmen können.
+- Verträge: Release- und Supply-Chain-Governance; normative AVM-Datenverträge bleiben unverändert.
+- Kompatibilität: Ausschließlich CI-Härtung.
+- Teständerung: `verifyPinnedActions` lehnt jede externe Action ohne vollständigen 40-stelligen Commit-SHA ab und ist Teil des Clean-Build-Gates.
+- Commit: Bestandteil des kontrollierten RC1-Fix-Commits.
+
+## RC1-FIX-006 – Getrennter Interoperabilitätsnachweis
+
+- Problem: Der technische Kotlin-/C++-Nachweis war vorhanden, aber organisatorische Fremdimplementierung und Vier-Augen-Freigabe waren nicht als eigenständiges Final-Gate maschinenlesbar getrennt.
+- Auswirkung: Technische Cross-Language-Konformität hätte irrtümlich als externe Branchenadoption interpretiert werden können.
+- Verträge: Nichtnormative Pilot-Evidence 1.0 und Final-Governance; die 37 RC1-Conformance-Prüfungen bleiben unverändert.
+- Kompatibilität: Additiver Prüf- und Governance-Rahmen ohne Änderung gültiger AVM-Eingaben oder Ausgaben.
+- Teständerung: `avmInteroperability` prüft die technische Referenzmatrix; `final-readiness` verlangt zwei Organisationen und zwei unabhängige Freigabeidentitäten.
+- Commit: Bestandteil des kontrollierten RC1-Fix-Commits.
+
+## RC1-FIX-007 – Explizite Pre-Release-Klassifizierung
+
+- Problem: Der veröffentlichte RC1 wurde nachträglich korrekt als GitHub Pre-Release markiert, der Workflow kodierte diese Klassifizierung jedoch nicht selbst.
+- Auswirkung: Eine Wiederverwendung des Releaseverfahrens könnte einen Release Candidate fälschlich als stabiles Final-Release darstellen.
+- Verträge: Release-Metadaten; normative AVM-Verträge bleiben unverändert.
+- Kompatibilität: Ausschließlich Veröffentlichungsmetadaten.
+- Teständerung: Der Releasebefehl setzt `--prerelease` explizit.
+- Commit: Bestandteil des kontrollierten RC1-Fix-Commits.

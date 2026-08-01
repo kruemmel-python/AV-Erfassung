@@ -28,6 +28,7 @@ includeAt("avm-backup", "conformance/avm-backup")
 includeAt("avm-diagnostics", "conformance/avm-diagnostics")
 includeAt("avm-compatibility", "conformance/avm-compatibility")
 includeAt("avm-conformance", "conformance/avm-conformance-cli")
+includeAt("avm-interoperability", "conformance/avm-interoperability")
 
 includeAt("platform-core", "enterprise/platform-core")
 includeAt("demo-cli", "enterprise/demo-cli")

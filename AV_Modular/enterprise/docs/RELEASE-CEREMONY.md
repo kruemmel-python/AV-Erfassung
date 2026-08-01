@@ -1,6 +1,6 @@
-# AVM 1.0.0-RC1 Releasezeremonie
+# AVM Releasezeremonie
 
-Der aktuelle Entwicklungsstand ist technisch eingefroren, aber nicht offiziell veröffentlicht. Der lokale Task `gradlew avmReleaseCandidate --no-daemon --warning-mode=all` erzeugt ausschließlich Development Evidence mit `official_release: false`.
+AVM 1.0.0-RC1 wurde am 1. August 2026 offiziell aus dem sauberen Commit `e8a9fc73d3184355b76910c9ba24cf29e5478214` veröffentlicht. Der annotierte Tag `avm-v1.0.0-rc1` und die organisationssignierte Evidence bilden den unveränderlichen Referenzpunkt. Ein lokaler Task `gradlew avmReleaseCandidate --no-daemon --warning-mode=all` erzeugt weiterhin ausschließlich Development Evidence mit `official_release: false`.
 
 ## Freigabekette
 
@@ -14,6 +14,8 @@ Der aktuelle Entwicklungsstand ist technisch eingefroren, aber nicht offiziell v
 8. Manifest, finalen Report und Release-Envelope signieren und anschließend erneut verifizieren.
 9. Artefakte unveränderlich ablegen und erst dann einen annotierten Tag erzeugen.
 10. Tag-Nachricht mit Commit, Profil, CI-Lauf, Key-ID sowie Manifest- und Report-Digest dokumentieren.
+
+Alle verwendeten GitHub Actions MUST auf vollständige Commit-SHAs gepinnt sein. Der Build MUST `verifyPinnedActions` bestehen. AVM 1.0.0 Final benötigt zusätzlich eine bestandene externe `final-readiness`-Prüfung und zwei unabhängige Freigabeidentitäten.
 
 ## Signierumgebung
 

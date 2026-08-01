@@ -1,0 +1,76 @@
+{
+  "contract": "avm-interoperability-evidence-1.0",
+  "evidence_id": "avm-reference-cross-language-2026-08-01",
+  "profile_id": "avm-reference-cross-language-1.0",
+  "generated_at_utc": "2026-08-01T12:00:00Z",
+  "scope": "technical-reference-baseline",
+  "implementations": [
+    {
+      "implementation_id": "avm-kotlin-reference-1.0.0-rc1",
+      "name": "AVM Kotlin Reference",
+      "version": "1.0.0-RC1",
+      "language": "Kotlin",
+      "organization_id": "org-avm-reference",
+      "source_digest": "9cf8180887d50162f8949a505f2932cb21f8708a510e67f3f5e8a20d366ab864",
+      "codebase_uri": "conformance/avm-canonical/src/main/kotlin/de/avm/canonical/WorkRecordContract.kt"
+    },
+    {
+      "implementation_id": "avm-cpp-reference-1.0.0-rc1",
+      "name": "AVM C++ Reference Validator",
+      "version": "1.0.0-RC1",
+      "language": "C++",
+      "organization_id": "org-avm-reference",
+      "source_digest": "8a380e48ed0da9e05d9cc97567b45ef16549b3e4eb0e77a33a72b83c92e67bf5",
+      "codebase_uri": "conformance/avm-contracts-cpp/canonical_golden.cpp"
+    }
+  ],
+  "vectors": [
+    {
+      "vector_id": "INTEROP-CANONICAL-001",
+      "subject": "specification/canonical-encoding/golden-work-record.json",
+      "subject_sha256": "fe4dc3855b182e1ee594d5e69d3ceeeb5c6097595c2735253b96e1f51e792f9e",
+      "results": [
+        { "implementation_id": "avm-kotlin-reference-1.0.0-rc1", "outcome": "ACCEPT", "digest": "3b41d63066d7d81b6196eeb804281558ddb10391938cb903713b9525a9507b4c" },
+        { "implementation_id": "avm-cpp-reference-1.0.0-rc1", "outcome": "ACCEPT", "digest": "3b41d63066d7d81b6196eeb804281558ddb10391938cb903713b9525a9507b4c" }
+      ]
+    },
+    {
+      "vector_id": "INTEROP-WORK-ATTACK-001",
+      "subject": "conformance/negative-fixtures/work-record-tampered.json",
+      "subject_sha256": "25a59332bcf13204e4a0e529c324d533de2c96018d29d818ef4543708a33c1b8",
+      "results": [
+        { "implementation_id": "avm-kotlin-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-CSV-2005" },
+        { "implementation_id": "avm-cpp-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-CSV-2005" }
+      ]
+    },
+    {
+      "vector_id": "INTEROP-PACKAGE-ATTACK-001",
+      "subject": "conformance/negative-fixtures/package-path-traversal.json",
+      "subject_sha256": "0129abce626e52c526c70feb6f68ede6135f8e467f05629ef84eff8ec0ac3c7b",
+      "results": [
+        { "implementation_id": "avm-kotlin-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-PKG-1003" },
+        { "implementation_id": "avm-cpp-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-PKG-1003" }
+      ]
+    },
+    {
+      "vector_id": "INTEROP-DIAGNOSTIC-ATTACK-001",
+      "subject": "conformance/negative-fixtures/diagnostic-personal-data.json",
+      "subject_sha256": "d1b676516a3c84695ba05543d7d412ce42404d9cd4f3ef88b690f94f7b8a701a",
+      "results": [
+        { "implementation_id": "avm-kotlin-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-DIA-5001" },
+        { "implementation_id": "avm-cpp-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-DIA-5001" }
+      ]
+    },
+    {
+      "vector_id": "INTEROP-COMPATIBILITY-ATTACK-001",
+      "subject": "conformance/negative-fixtures/compatibility-wrong-major.json",
+      "subject_sha256": "2e64727b90b18bde869550a51ac4bceb6272b1b693293d1a9b7f2e0f3e2c7b8e",
+      "results": [
+        { "implementation_id": "avm-kotlin-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-COMP-6001" },
+        { "implementation_id": "avm-cpp-reference-1.0.0-rc1", "outcome": "REJECT", "error_code": "AVM-COMP-6001" }
+      ]
+    }
+  ],
+  "pilot_organizations": ["org-avm-reference"],
+  "approvals": []
+}

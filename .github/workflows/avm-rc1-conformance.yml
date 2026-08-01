@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - "AV_Modular/**"
-      - ".github/workflows/avm-rc1-conformance.yml"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "AV_Modular/**"
-      - ".github/workflows/avm-rc1-conformance.yml"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
       run:
         working-directory: AV_Modular
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Bind immutable source identity
         shell: pwsh
         run: |
@@ -31,12 +31,12 @@ jobs:
           if (git status --porcelain) { throw "Checkout is dirty" }
           "AVM_SOURCE_COMMIT=$commit" >> $env:GITHUB_ENV
           "AVM_SOURCE_DIRTY=false" >> $env:GITHUB_ENV
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           cache: false
           msystem: MINGW64
@@ -44,7 +44,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
-      - uses: android-actions/setup-android@v4
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
       - name: Install isolated Android SDK 36
         shell: pwsh
         run: |
@@ -63,7 +63,7 @@ jobs:
           ./gradlew.bat --no-daemon clean --warning-mode=all
           ./gradlew.bat --no-daemon avmReleaseCandidate --warning-mode=all
       - name: Upload signed evidence and release artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: avm-1.0.0-rc1-${{ github.run_id }}
           if-no-files-found: error

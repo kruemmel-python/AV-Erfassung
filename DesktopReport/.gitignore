@@ -1,0 +1,4 @@
+build-test/
+ui-*.png
+dist/AV-Schichtreport/
+dist/*.zip

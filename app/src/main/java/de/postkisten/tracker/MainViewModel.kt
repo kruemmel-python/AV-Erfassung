@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-enum class Screen { HOME, HISTORY, SHIFTS }
+enum class Screen { HOME, HISTORY, SHIFTS, INFO }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: TrackerRepository = (application as TrackerApplication).repository
@@ -44,6 +44,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val activeShift = repository.activeShift.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val shifts = repository.shifts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val activeProcess = repository.activeProcess.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val storedShiftCount = repository.shiftCount.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+    val storedBoxCount = repository.boxCount.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+    private val preferences = application.getSharedPreferences("av_erfassung_status", Context.MODE_PRIVATE)
+    private val _lastSuccessfulExport = MutableStateFlow(preferences.getLong("last_successful_export", 0L))
+    val lastSuccessfulExport = _lastSuccessfulExport.asStateFlow()
 
     private val _screen = MutableStateFlow(Screen.HOME)
     val screen = _screen.asStateFlow()
@@ -220,6 +225,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun csv(): String = repository.exportCsv(LocalDate.now())
     suspend fun shiftCsv(ids: Set<Long>? = null, type: ShiftExportType = ShiftExportType.BOTH): String =
         repository.exportShifts(ids, type)
+
+    fun recordSuccessfulExport(timestamp: Long = System.currentTimeMillis()) {
+        preferences.edit().putLong("last_successful_export", timestamp).apply()
+        _lastSuccessfulExport.value = timestamp
+    }
 
     private fun action(block: suspend () -> Unit) = viewModelScope.launch {
         runCatching { block() }.onFailure { _errors.emit(it.message ?: "Aktion fehlgeschlagen") }

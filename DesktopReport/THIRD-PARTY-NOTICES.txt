@@ -1,0 +1,8 @@
+AV-Schichtreport verwendet Qt 5.15.17 und die MinGW-Laufzeitbibliotheken aus MSYS2.
+
+Qt ist unter den Bedingungen der GNU Lesser General Public License (LGPL),
+Version 3, verfügbar. Informationen und Quellcode: https://www.qt.io/licensing/
+
+Die mitgelieferten MinGW-/GCC-Laufzeitbibliotheken unterliegen ihren jeweiligen
+Open-Source-Lizenzen. Diese Hinweise ändern nicht die Lizenz des AV-Schichtreport-
+Quellcodes oder der importierten AV-Daten.
